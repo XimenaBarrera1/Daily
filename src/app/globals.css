@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+:root {
+  /* Default: Matcha & Salvia (Calm Botanical Study) */
+  --background: #F6F9F6;
+  --surface: #FFFFFF;
+  --surface-secondary: #EDF4EE;
+  --surface-hover: #E3EDE5;
+  --foreground: #14281A;
+  --muted-foreground: #4D6854;
+  --border: #D8E6DB;
+  --border-focus: #2E6B47;
+  
+  --primary: #2E6B47;
+  --primary-hover: #225235;
+  --primary-light: #E5F2E8;
+  --primary-foreground: #FFFFFF;
+  --accent: #95D5B2;
+  --accent-soft: #D8F3DC;
+
+  --primary-gradient: linear-gradient(135deg, #2E6B47 0%, #1B4D31 100%);
+  --hero-gradient: linear-gradient(135deg, #2E6B47 0%, #3D855B 50%, #1E5033 100%);
+
+  /* Status Colors */
+  --success: #238636;
+  --success-light: #E6F4EA;
+  --warning: #B45309;
+  --warning-light: #FEF3C7;
+  --danger: #C53030;
+  --danger-light: #FDE8E8;
+
+  --card-shadow: 0 2px 10px -2px rgba(20, 40, 26, 0.05), 0 1px 3px rgba(20, 40, 26, 0.03);
+  --card-shadow-hover: 0 12px 28px -4px rgba(20, 40, 26, 0.1), 0 4px 12px -2px rgba(20, 40, 26, 0.05);
+  --radius: 1rem;
+}
+
+/* 1. Espresso & Pergamino (Warm Paper & Library Cafe) */
+[data-theme="warm"] {
+  --background: #FAF7F2;
+  --surface: #FFFFFF;
+  --surface-secondary: #F4ECE1;
+  --surface-hover: #EFE4D6;
+  --foreground: #2C1D13;
+  --muted-foreground: #735948;
+  --border: #E8D9C8;
+  --border-focus: #8C532B;
+
+  --primary: #8C532B;
+  --primary-hover: #6E3F1F;
+  --primary-light: #F8EFE6;
+  --primary-foreground: #FFFFFF;
+  --accent: #DDB892;
+  --accent-soft: #EDE0D4;
+
+  --primary-gradient: linear-gradient(135deg, #8C532B 0%, #6E3F1F 100%);
+  --hero-gradient: linear-gradient(135deg, #8C532B 0%, #A66638 50%, #633718 100%);
+
+  --card-shadow: 0 2px 10px -2px rgba(44, 29, 19, 0.05), 0 1px 3px rgba(44, 29, 19, 0.03);
+  --card-shadow-hover: 0 12px 28px -4px rgba(44, 29, 19, 0.1), 0 4px 12px -2px rgba(44, 29, 19, 0.05);
+}
+
+/* 2. Pizarra Nórdica (Linear / Minimalist Obsidian & Graphite) */
+[data-theme="slate"] {
+  --background: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-secondary: #EEF2F6;
+  --surface-hover: #E2E8F0;
+  --foreground: #0F172A;
+  --muted-foreground: #52637A;
+  --border: #E2E8F0;
+  --border-focus: #1E293B;
+
+  --primary: #1E293B;
+  --primary-hover: #0F172A;
+  --primary-light: #F1F5F9;
+  --primary-foreground: #FFFFFF;
+  --accent: #94A3B8;
+  --accent-soft: #E2E8F0;
+
+  --primary-gradient: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+  --hero-gradient: linear-gradient(135deg, #1E293B 0%, #334155 50%, #0F172A 100%);
+
+  --card-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+  --card-shadow-hover: 0 12px 28px -4px rgba(15, 23, 42, 0.1), 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+}
+
+/* 3. Lavanda & Amatista (Creative Focus & Intuition) */
+[data-theme="lavender"] {
+  --background: #F9F7FD;
+  --surface: #FFFFFF;
+  --surface-secondary: #F2ECFB;
+  --surface-hover: #E9DEFA;
+  --foreground: #23153C;
+  --muted-foreground: #675385;
+  --border: #E6DAFA;
+  --border-focus: #6D44C2;
+
+  --primary: #6D44C2;
+  --primary-hover: #5532A0;
+  --primary-light: #F3EEFC;
+  --primary-foreground: #FFFFFF;
+  --accent: #B89BF0;
+  --accent-soft: #EDE5FA;
+
+  --primary-gradient: linear-gradient(135deg, #6D44C2 0%, #512E99 100%);
+  --hero-gradient: linear-gradient(135deg, #6D44C2 0%, #8258DE 50%, #482390 100%);
+
+  --card-shadow: 0 2px 10px -2px rgba(35, 21, 60, 0.05), 0 1px 3px rgba(35, 21, 60, 0.03);
+  --card-shadow-hover: 0 12px 28px -4px rgba(35, 21, 60, 0.1), 0 4px 12px -2px rgba(35, 21, 60, 0.05);
+}
+
+/* 4. Índigo Universitario (Oxford Academic Cobalt & Navy) */
+[data-theme="forest"] {
+  --background: #F6F9FD;
+  --surface: #FFFFFF;
+  --surface-secondary: #EBF2FC;
+  --surface-hover: #DEEAF9;
+  --foreground: #0C1B33;
+  --muted-foreground: #4B6185;
+  --border: #D5E4F7;
+  --border-focus: #1D4ED8;
+
+  --primary: #1D4ED8;
+  --primary-hover: #173FB2;
+  --primary-light: #EDF4FE;
+  --primary-foreground: #FFFFFF;
+  --accent: #85B5F8;
+  --accent-soft: #D9E8FD;
+
+  --primary-gradient: linear-gradient(135deg, #1D4ED8 0%, #153A9E 100%);
+  --hero-gradient: linear-gradient(135deg, #1D4ED8 0%, #2563EB 50%, #0F2C82 100%);
+
+  --card-shadow: 0 2px 10px -2px rgba(12, 27, 51, 0.05), 0 1px 3px rgba(12, 27, 51, 0.03);
+  --card-shadow-hover: 0 12px 28px -4px rgba(12, 27, 51, 0.1), 0 4px 12px -2px rgba(12, 27, 51, 0.05);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Smooth Focus States */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

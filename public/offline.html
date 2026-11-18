@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tempo — Modo sin conexión / Offline Mode</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #F8F9F7;
+      color: #252A26;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+    }
+    .card {
+      background: white;
+      border: 1px solid #E8EBE7;
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 480px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .badge {
+      display: inline-block;
+      background: #EAF0EA;
+      color: #4A5D4C;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    p {
+      font-size: 14px;
+      color: #777F78;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .btn {
+      display: inline-block;
+      background: #788C7A;
+      color: white;
+      padding: 10px 24px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">Tempo Offline</div>
+    <h1>Sin conexión a Internet / You are offline</h1>
+    <p>
+      Estás en modo sin conexión. Tus datos cargados previamente están guardados en tu dispositivo. Vuelve a conectarte para sincronizar cambios y recibir recordatorios en tiempo real.
+    </p>
+    <button class="btn" onclick="window.location.reload()">Reintentar conexión / Retry</button>
+  </div>
+</body>
+</html>

@@ -263,7 +263,7 @@ export default function SettingsPage() {
                         </div>
 
                         {isSelected ? (
-                          <span className="text-[10px] font-bold text-white bg-[var(--primary)] px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                          <span className="text-[10px] font-bold text-[var(--primary-foreground)] bg-[var(--primary)] px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
                             <Check className="w-3 h-3" />
                             <span>{locale === 'es' ? 'Activo' : 'Active'}</span>
                           </span>

@@ -195,7 +195,7 @@ function CalendarContent() {
                   <span
                     className={`text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center ${
                       isToday
-                        ? 'bg-[var(--primary)] text-white shadow-xs'
+                        ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs'
                         : cell.isCurrentMonth
                         ? 'text-[var(--foreground)]'
                         : 'text-[var(--muted-foreground)]/40'
@@ -219,7 +219,7 @@ function CalendarContent() {
                         e.stopPropagation();
                         setViewingItem({ type: 'event', data: ev });
                       }}
-                      className="px-1.5 py-0.5 bg-[var(--primary)] text-white rounded-md text-[10px] font-medium truncate hover:opacity-90 transition-opacity shadow-xs"
+                      className="px-1.5 py-0.5 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-md text-[10px] font-medium truncate hover:opacity-90 transition-opacity shadow-xs"
                     >
                       {ev.title}
                     </div>
@@ -334,7 +334,7 @@ function CalendarContent() {
             <button
               onClick={() => setViewMode('month')}
               className={`px-3 py-1 rounded-lg transition-colors ${
-                viewMode === 'month' ? 'bg-[var(--primary)] text-white shadow-xs' : 'hover:text-[var(--foreground)]'
+                viewMode === 'month' ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs' : 'hover:text-[var(--foreground)]'
               }`}
             >
               {t('calendar.month')}
@@ -342,7 +342,7 @@ function CalendarContent() {
             <button
               onClick={() => setViewMode('day')}
               className={`px-3 py-1 rounded-lg transition-colors ${
-                viewMode === 'day' ? 'bg-[var(--primary)] text-white shadow-xs' : 'hover:text-[var(--foreground)]'
+                viewMode === 'day' ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs' : 'hover:text-[var(--foreground)]'
               }`}
             >
               {t('calendar.day')}

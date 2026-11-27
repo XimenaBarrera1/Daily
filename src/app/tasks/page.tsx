@@ -238,7 +238,7 @@ function TasksContent() {
               onClick={() => setActiveTab(tab)}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
                 isActive
-                  ? 'bg-[var(--primary)] text-white shadow-xs'
+                  ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs'
                   : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)]'
               }`}
             >
@@ -348,7 +348,7 @@ function TasksContent() {
                     onClick={() => handleToggleComplete(task)}
                     className={`w-5 h-5 mt-0.5 rounded-md flex items-center justify-center shrink-0 transition-colors ${
                       isCompleted
-                        ? 'bg-[var(--primary)] text-white'
+                        ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
                         : 'border-2 border-[var(--border)] hover:border-[var(--primary)]'
                     }`}
                     aria-label="Toggle task completion"

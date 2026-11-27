@@ -37,7 +37,7 @@ export default function LandingPage() {
       <header className="w-full max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[var(--primary)] flex items-center justify-center text-white font-bold text-lg shadow-xs">
+          <div className="w-9 h-9 rounded-xl bg-[var(--primary)] flex items-center justify-center text-[var(--primary-foreground)] font-bold text-lg shadow-xs">
             D
           </div>
           <div>
@@ -67,7 +67,7 @@ export default function LandingPage() {
 
           <Link
             href="/auth/register"
-            className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs sm:text-sm font-medium px-4 py-2 rounded-xl transition-all shadow-xs active:scale-95"
+            className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-foreground)] text-xs sm:text-sm font-medium px-4 py-2 rounded-xl transition-all shadow-xs active:scale-95"
           >
             {t('landing.ctaStart')}
           </Link>
@@ -96,7 +96,7 @@ export default function LandingPage() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-16">
           <Link
             href="/auth/register"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-sm sm:text-base font-semibold px-6 py-3.5 rounded-2xl transition-all shadow-sm active:scale-95"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-foreground)] text-sm sm:text-base font-semibold px-6 py-3.5 rounded-2xl transition-all shadow-sm active:scale-95"
           >
             <span>{t('landing.ctaStart')}</span>
             <ArrowRight className="w-4 h-4" />
@@ -184,7 +184,7 @@ export default function LandingPage() {
                 <span className="text-[10px] text-[var(--muted-foreground)] block mt-1">
                   {locale === 'es' ? 'Estudiar para Redes' : 'Study for Networks'}
                 </span>
-                <div className="mt-3 px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-[11px] font-semibold inline-block">
+                <div className="mt-3 px-3 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-[11px] font-semibold inline-block">
                   {locale === 'es' ? 'Concentración Activa' : 'Deep Study'}
                 </div>
               </div>

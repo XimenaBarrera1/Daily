@@ -65,7 +65,7 @@
     "feature4Title": "Planificador y temporizador Focus",
     "feature4Desc": "Ubica tus tareas en tus huecos libres y utiliza el Pomodoro sereno para sesiones profundas de estudio.",
     "feature5Title": "Personalización y estilos visuales",
-    "feature5Desc": "Elige entre temas de color estéticos (Salvia, Pizarra, Lavanda, Cálido, Bosque) y adapta tu panel a tu ritmo.",
+    "feature5Desc": "Elige entre siete temas: Amanecer Rosa, Atardecer Oscuro, Matcha & Salvia, Café Moka & Pergamino, Pizarra Nórdica, Lavanda & Amatista e Índigo Universitario.",
     "workflowTitle": "Un flujo de trabajo en 4 sencillos pasos",
     "workflow1Title": "1. Configura tu espacio",
     "workflow1Desc": "Registra tus materias del semestre y personaliza la estética de tu espacio.",
@@ -335,11 +335,7 @@
     "missingKeysNotice": "Faltan algunas variables de entorno en el servidor. Consulta el archivo .env.example para configurarlas."
   },
   "pwa": {
-    "installTitle": "Instalar DAILY en tu dispositivo",
-    "installDesc": "Accede más rápido a tus materias y recibe recordatorios directamente en tu pantalla de inicio.",
-    "installButton": "Instalar aplicación",
     "offlineTitle": "Modo sin conexión",
-    "offlineDesc": "DAILY está funcionando en modo sin conexión. Tus datos previamente cargados están disponibles.",
-    "iosInstructions": "En iOS / Safari: pulsa el botón 'Compartir' (icono con flecha hacia arriba) y selecciona 'Añadir a la pantalla de inicio'."
+    "offlineDesc": "DAILY está funcionando en modo sin conexión. Tus datos previamente cargados están disponibles."
   }
 }

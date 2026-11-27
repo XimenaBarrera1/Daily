@@ -394,10 +394,6 @@ export default function NotificationsPage() {
           </div>
         )}
 
-        <p className="text-[11px] text-[var(--muted-foreground)]/70 mt-4 pt-3 border-t border-[var(--border)]">
-          <strong>{locale === 'es' ? 'Nota para dispositivos móviles:' : 'Mobile Note:'}</strong>{' '}
-          {t('pwa.iosInstructions')}
-        </p>
       </div>
 
       {/* 3. Filter Tabs */}
@@ -406,7 +402,7 @@ export default function NotificationsPage() {
           onClick={() => setFilter('all')}
           className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
             filter === 'all'
-              ? 'bg-[var(--primary)] text-white shadow-xs'
+              ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs'
               : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] bg-[var(--surface)] border border-[var(--border)]'
           }`}
         >
@@ -417,7 +413,7 @@ export default function NotificationsPage() {
           onClick={() => setFilter('unread')}
           className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
             filter === 'unread'
-              ? 'bg-[var(--primary)] text-white shadow-xs'
+              ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs'
               : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] bg-[var(--surface)] border border-[var(--border)]'
           }`}
         >

@@ -7,8 +7,7 @@ import { BottomNav } from './bottom-nav';
 import { QuickAddTaskDialog } from '../modals/quick-add-task-dialog';
 import { QuickAddEventDialog } from '../modals/quick-add-event-dialog';
 import { createClient } from '@/lib/supabase/client';
-import { useI18n } from '@/lib/i18n';
-import { AlertCircle, Download } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -16,13 +15,11 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children, title }: AppLayoutProps) {
-  const { t } = useI18n();
   const [userName, setUserName] = useState<string>('');
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isKeysMissing, setIsKeysMissing] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
     // Check if Supabase keys are default/missing
@@ -30,13 +27,6 @@ export function AppLayout({ children, title }: AppLayoutProps) {
     if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
       setIsKeysMissing(true);
     }
-
-    // Capture PWA install prompt
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     // Load user profile & unread notification count
     const loadUserData = async () => {
@@ -71,20 +61,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
     };
 
     loadUserData();
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
   }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-    }
-  };
 
   return (
     <div
@@ -121,22 +98,6 @@ export function AppLayout({ children, title }: AppLayoutProps) {
             >
               Ver guía
             </a>
-          </div>
-        )}
-
-        {/* PWA Install Banner (Desktop/Mobile) */}
-        {deferredPrompt && (
-          <div className="bg-[var(--primary-light)] border-b border-[var(--border)] px-4 py-2 text-xs text-[var(--foreground)] flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Download className="w-4 h-4 text-[var(--primary)]" />
-              <span>{t('pwa.installDesc')}</span>
-            </div>
-            <button
-              onClick={handleInstallClick}
-              className="bg-[var(--primary)] text-white px-3 py-1 rounded-lg text-xs font-semibold hover:bg-[var(--primary-hover)] transition-colors"
-            >
-              {t('pwa.installButton')}
-            </button>
           </div>
         )}
 

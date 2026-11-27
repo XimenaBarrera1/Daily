@@ -185,7 +185,7 @@ function FocusContent() {
           <button
             onClick={() => handleSetMode('focus', 25)}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-              sessionType === 'focus' ? 'bg-[var(--primary)] text-white shadow-xs' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+              sessionType === 'focus' ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
             }`}
           >
             {t('focus.focusSession')}
@@ -193,7 +193,7 @@ function FocusContent() {
           <button
             onClick={() => handleSetMode('short_break', 5)}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-              sessionType === 'short_break' ? 'bg-[var(--primary)] text-white shadow-xs' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+              sessionType === 'short_break' ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
             }`}
           >
             {t('focus.shortBreak')}
@@ -201,7 +201,7 @@ function FocusContent() {
           <button
             onClick={() => handleSetMode('long_break', 15)}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-              sessionType === 'long_break' ? 'bg-[var(--primary)] text-white shadow-xs' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+              sessionType === 'long_break' ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
             }`}
           >
             {t('focus.longBreak')}

@@ -18,7 +18,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const variantStyles = {
-      primary: 'bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] focus-visible:outline-[var(--primary)] shadow-xs hover:shadow active:scale-[0.98]',
+      primary: 'bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] focus-visible:outline-[var(--primary)] shadow-xs hover:shadow active:scale-[0.98]',
       secondary: 'bg-[var(--primary-light)] text-[var(--primary)] font-semibold hover:opacity-90 focus-visible:outline-[var(--primary)]',
       outline: 'border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-hover)] hover:border-[var(--primary)]/40 focus-visible:outline-[var(--primary)] shadow-xs',
       ghost: 'bg-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] focus-visible:outline-[var(--primary)]',

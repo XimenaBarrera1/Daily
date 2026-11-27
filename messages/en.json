@@ -65,7 +65,7 @@
     "feature4Title": "Daily planner & focus timer",
     "feature4Desc": "Allocate tasks into available free time and use the calm Pomodoro timer for deep study sessions.",
     "feature5Title": "Visual styles & customization",
-    "feature5Desc": "Choose aesthetic themes (Sage, Slate, Lavender, Warm, Forest) and tailor your dashboard to your pace.",
+    "feature5Desc": "Choose from seven themes: Pink Dawn, Dark Dusk, Matcha & Sage, Espresso & Parchment, Nordic Slate, Lavender & Amethyst, and University Indigo.",
     "workflowTitle": "A Simple 4-Step Student Workflow",
     "workflow1Title": "1. Set up your space",
     "workflow1Desc": "Register your courses for the semester and personalize your visual theme.",
@@ -335,11 +335,7 @@
     "missingKeysNotice": "Some environment variables are missing on the server. Consult .env.example to configure them."
   },
   "pwa": {
-    "installTitle": "Install DAILY on your device",
-    "installDesc": "Quickly access your university courses and receive reminders directly on your home screen.",
-    "installButton": "Install application",
     "offlineTitle": "Offline mode",
-    "offlineDesc": "DAILY is running in offline mode. Your previously loaded data is available.",
-    "iosInstructions": "On iOS / Safari: tap the 'Share' button (icon with an arrow pointing up) and select 'Add to Home Screen'."
+    "offlineDesc": "DAILY is running in offline mode. Your previously loaded data is available."
   }
 }

@@ -46,7 +46,7 @@ export function MiniWeekCalendar({ events, tasks, onDayClick }: MiniWeekCalendar
   };
 
   return (
-    <div className="bg-white rounded-2xl p-4 border border-[var(--border)] shadow-sm">
+    <div className="bg-[var(--surface)] rounded-2xl p-4 border border-[var(--border)] shadow-sm transition-colors">
       <div className="grid grid-cols-7 gap-1">
         {weekDays.map((date, index) => {
           const { dayEvents, dayTasks } = getItemsForDay(date);
@@ -57,7 +57,7 @@ export function MiniWeekCalendar({ events, tasks, onDayClick }: MiniWeekCalendar
             <div 
               key={index} 
               className={`flex flex-col items-center p-2 rounded-xl transition ${
-                activeToday ? 'bg-[var(--primary-light)]/40' : 'hover:bg-gray-50'
+                activeToday ? 'bg-[var(--primary-light)]/40' : 'hover:bg-[var(--surface-hover)]'
               }`}
               onClick={() => onDayClick?.(date)}
             >
@@ -71,7 +71,7 @@ export function MiniWeekCalendar({ events, tasks, onDayClick }: MiniWeekCalendar
               {/* Número del día */}
               <span className={`text-sm font-semibold flex items-center justify-center h-7 w-7 rounded-full ${
                 activeToday 
-                  ? 'bg-[var(--primary)] text-white' 
+                  ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
                   : 'text-[var(--foreground)]'
               }`}>
                 {date.getDate()}
@@ -83,7 +83,7 @@ export function MiniWeekCalendar({ events, tasks, onDayClick }: MiniWeekCalendar
                   <div key={`task-${i}`} className="h-1 w-4 rounded-full bg-[var(--primary)] opacity-80" />
                 ))}
                 {dayEvents.slice(0, 2).map((event, i) => (
-                  <div key={`event-${i}`} className="h-1 w-4 rounded-full bg-[#B4A5E8] opacity-80" /> // Lavanda de tu paleta
+                  <div key={`event-${i}`} className="h-1 w-4 rounded-full bg-[var(--accent)] opacity-80" />
                 ))}
                 {(dayTasks.length + dayEvents.length) > 4 && (
                   <span className="text-[8px] text-[var(--muted-foreground)]">+</span>

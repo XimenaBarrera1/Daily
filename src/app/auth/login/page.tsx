@@ -83,7 +83,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 sm:p-8 shadow-[var(--shadow-card)]">
         {/* Brand */}
         <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--primary)] text-white font-bold text-lg flex items-center justify-center mx-auto mb-3 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-[var(--primary)] text-[var(--primary-foreground)] font-bold text-lg flex items-center justify-center mx-auto mb-3 shadow-sm">
             D
           </div>
           <h1 className="text-xl font-bold text-[var(--foreground)] tracking-tight">{t('auth.loginTitle')}</h1>

@@ -186,7 +186,7 @@ export function Header({ title, userName, unreadCount = 0 }: HeaderProps) {
             }}
             className="flex items-center gap-2 p-1 pl-2 pr-2.5 rounded-full text-xs font-medium text-[var(--foreground)] hover:bg-[var(--surface-hover)] border border-[var(--border)] bg-[var(--surface)] transition-all shadow-xs"
           >
-            <div className="w-6 h-6 rounded-full bg-[var(--primary)] flex items-center justify-center text-white font-bold text-xs shadow-xs">
+            <div className="w-6 h-6 rounded-full bg-[var(--primary)] flex items-center justify-center text-[var(--primary-foreground)] font-bold text-xs shadow-xs">
               {(userName || 'D')[0].toUpperCase()}
             </div>
             <span className="max-w-[100px] truncate hidden md:inline font-semibold">

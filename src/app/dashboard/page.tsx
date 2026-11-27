@@ -566,7 +566,7 @@ function DashboardContent() {
                             }
                             className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition ${
                               task.status === 'completed'
-                                ? 'bg-[var(--primary)] text-white'
+                                ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
                                 : 'bg-[var(--surface-secondary)] text-transparent hover:bg-[var(--primary-light)]'
                             }`}
                           >

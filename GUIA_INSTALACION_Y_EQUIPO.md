@@ -115,7 +115,12 @@ CRON_SECRET=daily_cron_secret_token_change_in_production
 
 # 5. URL Local
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Correos administradores, separados por coma (opcional)
+ADMIN_EMAILS=admin@tu-dominio.com
 ```
+
+La tarjeta de estado del sistema solo aparece para los correos incluidos en `ADMIN_EMAILS` o usuarios con `app_metadata.role = "admin"` en Supabase Auth. Si la cuenta normal no tiene uno de esos permisos, la API responde que no es administradora y la tarjeta no se renderiza.
 
 ### Recordatorios automáticos en producción
 

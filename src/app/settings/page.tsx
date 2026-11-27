@@ -44,6 +44,7 @@ export default function SettingsPage() {
   const [quietHoursStart, setQuietHoursStart] = useState('22:00');
   const [quietHoursEnd, setQuietHoursEnd] = useState('07:00');
   const [defaultReminder, setDefaultReminder] = useState(15);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Password update
   const [newPassword, setNewPassword] = useState('');
@@ -65,12 +66,23 @@ export default function SettingsPage() {
   const [vapidConfigured, setVapidConfigured] = useState(false);
 
   const loadProfile = useCallback(async () => {
+    setIsAdmin(false);
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
         setEmail(user.email || '');
+
+        try {
+          const adminResponse = await fetch('/api/admin/status', { cache: 'no-store' });
+          if (adminResponse.ok) {
+            const adminStatus = await adminResponse.json();
+            setIsAdmin(adminStatus.isAdmin === true);
+          }
+        } catch {
+          setIsAdmin(false);
+        }
 
         const { data } = await supabase
           .from('profiles')
@@ -215,7 +227,7 @@ export default function SettingsPage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 space-y-8">
+        <div className={`${isAdmin ? 'lg:col-span-8' : 'lg:col-span-12'} space-y-8`}>
           {/* Section 0: Visual Styles & Themes (Slide 6 - Personalization) */}
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 sm:p-8 shadow-xs">
             <div className="flex items-center gap-3 pb-4 border-b border-[var(--border)] mb-6">
@@ -444,7 +456,8 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Right Column: Diagnostics */}
+        {/* Connection diagnostics are visible only to configured administrators. */}
+        {isAdmin && (
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 shadow-xs">
             <div className="flex items-center gap-2 mb-4">
@@ -496,6 +509,7 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Delete Account Modal */}

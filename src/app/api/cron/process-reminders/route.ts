@@ -161,7 +161,7 @@ async function handleReminderProcessing(request: NextRequest) {
         }
 
         // A. In-App Notification (Always record unless explicit failure)
-        const { error: notificationError } = await supabase.from('notifications').insert({
+        const { data: notification, error: notificationError } = await supabase.from('notifications').insert({
           user_id: reminder.user_id,
           title,
           body,
@@ -169,8 +169,9 @@ async function handleReminderProcessing(request: NextRequest) {
           related_task_id: reminder.task_id,
           related_event_id: reminder.event_id,
           is_read: false,
-        });
+        }).select('id').single();
         if (notificationError) throw notificationError;
+        const notificationTag = `notification-${notification.id}`;
 
         // B. Browser Push Notification
         if (shouldSendPush && vapidPublic && vapidPrivate) {
@@ -192,7 +193,7 @@ async function handleReminderProcessing(request: NextRequest) {
                     title,
                     body,
                     url: targetUrl,
-                    tag: `reminder-${reminder.id}`,
+                    tag: notificationTag,
                   })
                 );
               } catch (pushErr: any) {

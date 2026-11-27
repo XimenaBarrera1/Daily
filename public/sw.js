@@ -53,7 +53,7 @@ self.addEventListener('push', (event) => {
       url: data.url || '/dashboard',
     },
     tag: data.tag || 'tempo-reminder',
-    renotify: true,
+    renotify: false,
     actions: [
       {
         action: 'open',

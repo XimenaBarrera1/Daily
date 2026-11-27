@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
         alerts.push(localAlert);
 
         // A. Insert in-app notification
-        const { error: notificationError } = await admin.from('notifications').insert({
+        const { data: notification, error: notificationError } = await admin.from('notifications').insert({
           user_id: user.id,
           title,
           body,
@@ -159,8 +159,9 @@ export async function POST(request: NextRequest) {
           related_task_id: reminder.task_id,
           related_event_id: reminder.event_id,
           is_read: false,
-        });
+        }).select('id').single();
         if (notificationError) throw notificationError;
+        localAlert.tag = `notification-${notification.id}`;
 
         // B. Push Notification (if enabled and not in quiet hours)
         if (profile?.push_reminders_enabled !== false && !quiet && vapidPublic && vapidPrivate) {
@@ -183,7 +184,7 @@ export async function POST(request: NextRequest) {
                     title,
                     body,
                     url: targetUrl,
-                    tag: `reminder-${reminder.id}`,
+                    tag: localAlert.tag,
                   })
                 );
                 localAlert.deliveredByPush = true;

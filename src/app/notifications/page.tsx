@@ -11,51 +11,35 @@ import { Notification } from '@/types';
 import {
   Bell,
   Check,
-  Send,
   AlertCircle,
   ExternalLink,
   ShieldCheck,
-  Clock,
-  RefreshCw,
   Info,
 } from 'lucide-react';
 import {
   isPushNotificationSupported,
   getNotificationPermissionState,
   subscribeToPushNotifications,
-  showLocalNotification,
 } from '@/lib/push/client';
 
 export default function NotificationsPage() {
   const { locale, t, formatDate, formatTime } = useI18n();
+  const reminderDeliveryFailedText = t('notifications.reminderDeliveryFailed');
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const [isLoading, setIsLoading] = useState(true);
 
   // Push notification states
-  const [pushSupported, setPushSupported] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
-  const [hasRemoteSub, setHasRemoteSub] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
-  const [isTestingPush, setIsTestingPush] = useState(false);
   const [pushMessage, setPushMessage] = useState<{ text: string; type: 'success' | 'warning' | 'error' | 'info' } | null>(null);
 
-  // Scheduler & Reminders state
-  const [pendingRemindersCount, setPendingRemindersCount] = useState<number>(0);
-  const [isCheckingReminders, setIsCheckingReminders] = useState(false);
-  const [schedulerNotice, setSchedulerNotice] = useState<string | null>(null);
-
-  const loadNotificationsAndReminders = useCallback(async () => {
+  const loadNotifications = useCallback(async () => {
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
+      if (!user) return;
 
-      // 1. Fetch Notifications
       const { data: notifs } = await supabase
         .from('notifications')
         .select('*')
@@ -66,43 +50,38 @@ export default function NotificationsPage() {
         setNotifications(notifs as Notification[]);
       }
 
-      // 2. Fetch pending reminders count
-      const { count: remCount } = await supabase
-        .from('reminders')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('status', 'pending');
-
-      setPendingRemindersCount(remCount || 0);
-
-      // 3. Check if user has remote push subscriptions
-      const { count: subCount } = await supabase
-        .from('push_subscriptions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-
-      setHasRemoteSub((subCount || 0) > 0);
     } catch (err) {
-      console.warn('Error fetching notifications/reminders:', err);
-    } finally {
-      setIsLoading(false);
+      console.warn('Error fetching notifications:', err);
     }
   }, []);
 
   useEffect(() => {
-    loadNotificationsAndReminders();
+    loadNotifications();
+
+    const handleDataUpdated = () => loadNotifications();
+    const handleReminderFailure = () => {
+      setPushMessage({ text: reminderDeliveryFailedText, type: 'error' });
+    };
+    window.addEventListener('tempo:data-updated', handleDataUpdated);
+    window.addEventListener('tempo:reminder-failed', handleReminderFailure);
 
     // Check push support
     const checkPush = async () => {
       const supported = await isPushNotificationSupported();
-      setPushSupported(supported);
       if (supported) {
         const state = await getNotificationPermissionState();
         setPushPermission(state);
+      } else {
+        setPushPermission('denied');
       }
     };
     checkPush();
-  }, [loadNotificationsAndReminders]);
+
+    return () => {
+      window.removeEventListener('tempo:data-updated', handleDataUpdated);
+      window.removeEventListener('tempo:reminder-failed', handleReminderFailure);
+    };
+  }, [loadNotifications, reminderDeliveryFailedText]);
 
   // Mark single as read
   const handleMarkAsRead = async (id: string) => {
@@ -115,7 +94,7 @@ export default function NotificationsPage() {
       await supabase.from('notifications').update({ is_read: true }).eq('id', id);
     } catch (err) {
       console.warn('Error marking as read:', err);
-      loadNotificationsAndReminders();
+      loadNotifications();
     }
   };
 
@@ -135,7 +114,7 @@ export default function NotificationsPage() {
       }
     } catch (err) {
       console.warn('Error marking all as read:', err);
-      loadNotificationsAndReminders();
+      loadNotifications();
     }
   };
 
@@ -155,7 +134,7 @@ export default function NotificationsPage() {
         text: t('notifications.pushEnabled'),
         type: 'success',
       });
-      await loadNotificationsAndReminders();
+      await loadNotifications();
     } else if (result.isPushServiceBlocked) {
       setPushMessage({
         text: result.error || t('notifications.pushServiceBlocked'),
@@ -166,86 +145,6 @@ export default function NotificationsPage() {
         text: result.error || 'Error enabling notifications',
         type: 'error',
       });
-    }
-  };
-
-  // Send Test Notification (both in-app and native OS notification)
-  const handleSendTestPush = async () => {
-    setIsTestingPush(true);
-    setPushMessage(null);
-
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      const testTitle = locale === 'es' ? 'Tempo — Notificación de prueba' : 'Tempo — Test Notification';
-      const testBody = locale === 'es'
-        ? '¡Tus recordatorios y avisos están configurados correctamente!'
-        : 'Your reminders and notices are configured correctly!';
-
-      // 1. Insert in-app notification in Supabase
-      if (user) {
-        await supabase.from('notifications').insert({
-          user_id: user.id,
-          title: testTitle,
-          body: testBody,
-          type: 'reminder',
-          is_read: false,
-        });
-      }
-
-      // 2. Show native OS notification in Windows/Mac
-      await showLocalNotification(testTitle, {
-        body: testBody,
-      });
-
-      // 3. If remote push subscription exists, trigger push test API
-      if (hasRemoteSub) {
-        await fetch('/api/push/test', { method: 'POST' }).catch(() => {});
-      }
-
-      setPushMessage({
-        text: t('notifications.testPushSent'),
-        type: 'success',
-      });
-
-      await loadNotificationsAndReminders();
-      window.dispatchEvent(new CustomEvent('tempo:data-updated'));
-    } catch (err: any) {
-      setPushMessage({ text: err.message || t('notifications.testPushError'), type: 'error' });
-    } finally {
-      setIsTestingPush(false);
-    }
-  };
-
-  // Process reminders manually (on-demand scheduler)
-  const handleProcessReminders = async () => {
-    setIsCheckingReminders(true);
-    setSchedulerNotice(null);
-
-    try {
-      const res = await fetch('/api/reminders/process', { method: 'POST' });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        if (data.processed > 0) {
-          setSchedulerNotice(
-            locale === 'es'
-              ? `Se despacharon ${data.sent} recordatorio(s) pendiente(s).`
-              : `Dispatched ${data.sent} due reminder(s).`
-          );
-        } else {
-          setSchedulerNotice(t('notifications.noPendingReminders'));
-        }
-        await loadNotificationsAndReminders();
-        window.dispatchEvent(new CustomEvent('tempo:data-updated'));
-      } else {
-        setSchedulerNotice(data.error || 'Error checking reminders');
-      }
-    } catch (err: any) {
-      setSchedulerNotice(err.message || 'Error executing check');
-    } finally {
-      setIsCheckingReminders(false);
     }
   };
 
@@ -275,51 +174,7 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* 1. Reminder Scheduler Section (Local & Cloud) */}
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 mb-6 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-[var(--primary-light)] text-[var(--primary)] flex items-center justify-center shrink-0 shadow-xs">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-[var(--foreground)]">
-                  {t('notifications.schedulerTitle')}
-                </h3>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--surface-secondary)] text-[var(--foreground)] font-semibold border border-[var(--border)]">
-                  {t('notifications.pendingRemindersCount')} {pendingRemindersCount}
-                </span>
-              </div>
-              <p className="text-xs text-[var(--muted-foreground)] mt-1 max-w-xl leading-relaxed">
-                {t('notifications.schedulerDesc')}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 self-start md:self-center shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleProcessReminders}
-              isLoading={isCheckingReminders}
-              className="rounded-xl shadow-xs"
-            >
-              <RefreshCw className="w-3.5 h-3.5 mr-1" />
-              <span>{isCheckingReminders ? t('notifications.checkingReminders') : t('notifications.checkRemindersNow')}</span>
-            </Button>
-          </div>
-        </div>
-
-        {schedulerNotice && (
-          <div className="mt-4 p-3 bg-[var(--primary-light)]/70 border border-[var(--primary)]/30 rounded-xl text-xs text-[var(--foreground)] flex items-center gap-2">
-            <Check className="w-4 h-4 shrink-0 text-[var(--primary)]" />
-            <span>{schedulerNotice}</span>
-          </div>
-        )}
-      </div>
-
-      {/* 2. Web & System Notifications Banner */}
+      {/* Browser notification preferences */}
       <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 mb-8 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
@@ -338,21 +193,10 @@ export default function NotificationsPage() {
 
           <div className="flex items-center gap-2 self-start md:self-center shrink-0">
             {pushPermission === 'granted' ? (
-              <>
-                <Badge variant="success" className="py-1 px-3">
-                  <ShieldCheck className="w-3.5 h-3.5 mr-1" />
-                  {t('notifications.pushEnabled')}
-                </Badge>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSendTestPush}
-                  isLoading={isTestingPush}
-                >
-                  <Send className="w-3.5 h-3.5 mr-1" />
-                  {t('notifications.testPush')}
-                </Button>
-              </>
+              <Badge variant="success" className="py-1 px-3">
+                <ShieldCheck className="w-3.5 h-3.5 mr-1" />
+                {t('notifications.pushEnabled')}
+              </Badge>
             ) : pushPermission === 'denied' ? (
               <Badge variant="danger" className="py-1 px-3">
                 <AlertCircle className="w-3.5 h-3.5 mr-1" />

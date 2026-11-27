@@ -3,7 +3,7 @@ export type Language = 'es' | 'en';
 export type TimeFormat = '12h' | '24h';
 export type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
 
-export type ThemeStyle = 'sage' | 'slate' | 'lavender' | 'warm' | 'forest' | 'dawn' | 'dusk';
+export type ThemeStyle = 'minimal' | 'rose' | 'focus';
 
 export interface WorkspaceLayout {
   showFocus: boolean;

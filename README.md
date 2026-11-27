@@ -36,16 +36,13 @@ Visita `http://localhost:3000` en tu navegador.
 
 ---
 
-## 🎨 Sistema de 5 Paletas de Colores Dinámicas
+## Tres estilos visuales
 
-La aplicación cuenta con un motor de diseño reactivo implementado mediante variables CSS en `src/app/globals.css`. Cada tema transforma automáticamente el 100% de la interfaz (botones, tarjetas, inputs, tablas, modales y barras de navegación):
+DAILY ofrece tres estilos de personalización, diseñados para distintas formas de trabajar:
 
-1. **Sage (Serenidad Verde):** Tono bosque nórdico (`#2d5a43`) con fondos suaves y acentos menta.
-2. **Warm (Calidez Minimalista):** Tono terracota y ámbar tostado (`#9c5221`) con fondos marfil tipo papel artesanal.
-3. **Slate (Precisión Nórdica):** Azul petróleo arquitectónico (`#1e4258`) y superficies platino de alta concentración.
-4. **Lavender (Calma Creativa):** Índigo y lavanda moderno (`#4f46e5`) con fondos violeta claro y gran energía visual.
-5. **Forest (Profundidad Esmeralda):** Esmeralda profundo (`#134e4a`) con salvia natural y contraste orgánico.
-
+1. **Minimal Studio:** Interfaz tranquila y monoespaciada, con bordes discretos y espacio para concentrarse.
+2. **Rose & Plum:** Paleta suave y editorial para listas de lectura y diarios.
+3. **Focus Grid:** Tablero Kanban de alta densidad con fechas visibles y listas rápidas.
 ---
 
 ## ✨ Funcionalidades Principales
@@ -58,7 +55,7 @@ La aplicación cuenta con un motor de diseño reactivo implementado mediante var
 - 📊 **Progreso y Estadísticas (`/progress`):** Métricas de cumplimiento semanal y resumen de hábitos de estudio.
 - 🔔 **Recordatorios y Web Push (`/notifications`):** Notificaciones en el navegador (PWA con Service Worker) y correos transaccionales vía Resend.
 - 🌐 **Experiencia 100% Bilingüe:** Interfaz traducible al instante entre Español e Inglés (`messages/es.json` y `messages/en.json`).
-- 📱 **Progressive Web App (PWA):** Instalable en teléfonos móviles y ordenadores con soporte offline.
+- 📱 **Experiencia web adaptable:** Interfaz responsiva con soporte offline.
 
 ---
 

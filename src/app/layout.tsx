@@ -7,20 +7,13 @@ import Script from 'next/script';
 export const metadata: Metadata = {
   title: 'DAILY — Digital Workspace for University Students',
   description: 'Plan with intention, focus on what matters, and make every day count. Assignments, notes, calendars and personal goals in one place.',
-  manifest: '/manifest.json',
   icons: {
     icon: '/icons/icon.svg',
-    apple: '/icons/icon-192.png',
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'DAILY',
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#2d5a43',
+  themeColor: '#F9F7FD',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -33,9 +26,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-      </head>
       <body className="min-h-screen bg-[var(--background)] text-[var(--foreground)] antialiased transition-colors duration-200">
         <I18nProvider>
           <ThemeProvider>

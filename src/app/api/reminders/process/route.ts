@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
         }
 
         // A. Insert in-app notification
-        await admin.from('notifications').insert({
+        const { error: notificationError } = await admin.from('notifications').insert({
           user_id: user.id,
           title,
           body,
@@ -137,15 +137,18 @@ export async function POST(request: NextRequest) {
           related_event_id: reminder.event_id,
           is_read: false,
         });
+        if (notificationError) throw notificationError;
 
         // B. Push Notification (if enabled and not in quiet hours)
         if (profile?.push_reminders_enabled !== false && !quiet && vapidPublic && vapidPrivate) {
-          const { data: subs } = await admin
+          const { data: subs, error: subscriptionsError } = await admin
             .from('push_subscriptions')
             .select('*')
             .eq('user_id', user.id);
+          if (subscriptionsError) throw subscriptionsError;
 
           if (subs && subs.length > 0) {
+            let pushFailure: Error | null = null;
             for (const sub of subs) {
               try {
                 await sendNotification(
@@ -162,10 +165,14 @@ export async function POST(request: NextRequest) {
                 );
               } catch (pushErr: any) {
                 if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
-                  await admin.from('push_subscriptions').delete().eq('id', sub.id);
+                  const { error: deleteError } = await admin.from('push_subscriptions').delete().eq('id', sub.id);
+                  if (deleteError) throw deleteError;
                 }
+                console.error(`Push delivery failed for reminder ${reminder.id}:`, pushErr);
+                pushFailure = new Error(pushErr.message || 'Browser push delivery failed.');
               }
             }
+            if (pushFailure) throw pushFailure;
           }
         }
 
@@ -198,13 +205,14 @@ export async function POST(request: NextRequest) {
         }
 
         // Mark as sent
-        await admin
+        const { error: statusError } = await admin
           .from('reminders')
           .update({
             status: 'sent',
             sent_at: new Date().toISOString(),
           })
           .eq('id', reminder.id);
+        if (statusError) throw statusError;
 
         results.sent++;
       } catch (remErr: any) {

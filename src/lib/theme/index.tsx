@@ -18,83 +18,66 @@ export interface ThemeInfo {
 
 const THEMES: ThemeInfo[] = [
   {
-    id: 'dawn',
-    nameEs: 'Amanecer Rosa',
-    nameEn: 'Pink Dawn',
-    descEs: 'Degradado vibrante de rosas y magentas con toques de cristal',
-    descEn: 'Vibrant gradient of pinks and magentas with glass touches',
-    primaryColor: '#D946EF',
-    accentColor: '#F472B6',
-    bgPreview: '#FDF2F8',
-    badgePreview: 'bg-[#FCE7F3] text-[#D946EF]',
-  },
-  {
-    id: 'dusk',
-    nameEs: 'Atardecer Oscuro',
-    nameEn: 'Dark Dusk',
-    descEs: 'Azul marino profundo con acentos de magenta y atardecer',
-    descEn: 'Deep navy blue with magenta and sunset accents',
-    primaryColor: '#F472B6',
-    accentColor: '#818CF8',
-    bgPreview: '#0F111A',
-    badgePreview: 'bg-[#312E81] text-[#F472B6]',
-  },
-  {
-    id: 'sage',
-    nameEs: 'Matcha & Salvia',
-    nameEn: 'Matcha & Sage',
-    descEs: 'Verde sereno y orgánico para concentración zen',
-    descEn: 'Serene organic green for calm focus',
-    primaryColor: '#2E6B47',
-    accentColor: '#95D5B2',
-    bgPreview: '#F6F9F6',
-    badgePreview: 'bg-[#E5F2E8] text-[#2E6B47]',
-  },
-  {
-    id: 'warm',
-    nameEs: 'Café Moka & Pergamino',
-    nameEn: 'Espresso & Library',
-    descEs: 'Tonos avellana cálidos y papel pergamino',
-    descEn: 'Warm hazelnut and old book parchment',
-    primaryColor: '#8C532B',
-    accentColor: '#DDB892',
-    bgPreview: '#FAF7F2',
-    badgePreview: 'bg-[#F8EFE6] text-[#8C532B]',
-  },
-  {
-    id: 'slate',
-    nameEs: 'Pizarra Nórdica',
-    nameEn: 'Nordic Slate',
-    descEs: 'Carbón y grafito minimalista de alta precisión',
-    descEn: 'Minimalist high-precision graphite & stone',
-    primaryColor: '#1E293B',
-    accentColor: '#94A3B8',
-    bgPreview: '#F8FAFC',
-    badgePreview: 'bg-[#F1F5F9] text-[#1E293B]',
-  },
-  {
-    id: 'lavender',
-    nameEs: 'Lavanda & Amatista',
-    nameEn: 'Lavender & Amethyst',
-    descEs: 'Violeta suave para estudio creativo y lectura',
-    descEn: 'Soft purple for creative study and reading',
+    id: 'minimal',
+    nameEs: 'Minimal Studio',
+    nameEn: 'Minimal Studio',
+    descEs: 'Tranquilo y monoespaciado, con bordes discretos y espacio para concentrarte.',
+    descEn: 'Quiet and monospaced, with sparse borders and room to focus.',
     primaryColor: '#6D44C2',
     accentColor: '#B89BF0',
     bgPreview: '#F9F7FD',
     badgePreview: 'bg-[#F3EEFC] text-[#6D44C2]',
   },
   {
-    id: 'forest',
-    nameEs: 'Índigo Universitario',
-    nameEn: 'Indigo Campus',
-    descEs: 'Azul cobalto universitario clásico y estructurado',
-    descEn: 'Classic academic cobalt blue and structured ivory',
-    primaryColor: '#1D4ED8',
-    accentColor: '#85B5F8',
-    bgPreview: '#F6F9FD',
-    badgePreview: 'bg-[#EDF4FE] text-[#1D4ED8]',
+    id: 'rose',
+    nameEs: 'Rose & Plum',
+    nameEn: 'Rose & Plum',
+    descEs: 'Estilo editorial cálido, con paletas suaves para leer y escribir.',
+    descEn: 'Warm editorial style with soft colors for reading and journaling.',
+    primaryColor: '#BE4A8B',
+    accentColor: '#F09BC6',
+    bgPreview: '#FFF5FA',
+    badgePreview: 'bg-[#FBE5F0] text-[#9B356F]',
+  },
+  {
+    id: 'focus',
+    nameEs: 'Focus Grid',
+    nameEn: 'Focus Grid',
+    descEs: 'Tablero Kanban compacto, fechas visibles y listas rápidas.',
+    descEn: 'High-density Kanban with clear deadlines and quick checklists.',
+    primaryColor: '#F077B5',
+    accentColor: '#9690F4',
+    bgPreview: '#11131F',
+    badgePreview: 'bg-[#302943] text-[#F077B5]',
   },
 ];
+
+const LEGACY_THEME_MAP: Record<string, ThemeStyle> = {
+  minimal: 'minimal',
+  rose: 'rose',
+  focus: 'focus',
+  dawn: 'rose',
+  dusk: 'focus',
+  sage: 'minimal',
+  warm: 'minimal',
+  slate: 'minimal',
+  lavender: 'minimal',
+  forest: 'minimal',
+};
+
+function normalizeTheme(value: unknown): ThemeStyle {
+  if (typeof value === 'string' && Object.prototype.hasOwnProperty.call(LEGACY_THEME_MAP, value)) {
+    return LEGACY_THEME_MAP[value];
+  }
+  return 'minimal';
+}
+
+function applyTheme(theme: ThemeStyle) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const themeColor = THEMES.find((item) => item.id === theme)?.bgPreview;
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeColor && themeColorMeta) themeColorMeta.setAttribute('content', themeColor);
+}
 
 interface ThemeContextType {
   theme: ThemeStyle;
@@ -103,25 +86,19 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dawn',
+  theme: 'minimal',
   setTheme: async () => {},
   availableThemes: THEMES,
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeStyle>('dawn');
+  const [theme, setThemeState] = useState<ThemeStyle>('minimal');
 
   useEffect(() => {
-    const saved = localStorage.getItem('daily_theme') as ThemeStyle;
-    
-    if (saved && THEMES.some((t) => t.id === saved)) {
-      setThemeState(saved);
-      document.documentElement.setAttribute('data-theme', saved);
-    } else {
-      setThemeState('dawn');
-      document.documentElement.setAttribute('data-theme', 'dawn');
-      localStorage.setItem('daily_theme', 'dawn');
-    }
+    const savedTheme = normalizeTheme(localStorage.getItem('daily_theme'));
+    setThemeState(savedTheme);
+    applyTheme(savedTheme);
+    localStorage.setItem('daily_theme', savedTheme);
 
     const fetchProfileTheme = async () => {
       try {
@@ -134,10 +111,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             .eq('id', user.id)
             .single();
 
-          if (data?.theme && THEMES.some((t) => t.id === data.theme)) {
-            setThemeState(data.theme as ThemeStyle);
-            document.documentElement.setAttribute('data-theme', data.theme);
-            localStorage.setItem('daily_theme', data.theme);
+          if (data?.theme) {
+            const profileTheme = normalizeTheme(data.theme);
+            setThemeState(profileTheme);
+            applyTheme(profileTheme);
+            localStorage.setItem('daily_theme', profileTheme);
           }
         }
       } catch (err) {
@@ -150,7 +128,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = async (newTheme: ThemeStyle) => {
     setThemeState(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
+    applyTheme(newTheme);
     localStorage.setItem('daily_theme', newTheme);
 
     try {

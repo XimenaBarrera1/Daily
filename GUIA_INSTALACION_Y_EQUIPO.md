@@ -146,7 +146,7 @@ Abre tu navegador en:
 👉 **[http://localhost:3000](http://localhost:3000)**
 
 ### ¿Qué verificar en local?
-- [x] **Página de Inicio (Landing):** Prueba los temas en vivo (Sage, Warm, Slate, Lavender, Forest).
+- [x] **Página de Inicio (Landing):** Elige entre Minimal Studio, Rose & Plum y Focus Grid.
 - [x] **Registro / Inicio de sesión:** Crea una cuenta de prueba (`/auth/register` o `/auth/login`).
 - [x] **Tareas (`/tasks`):** Crea, edita, completa y filtra tareas por materia/prioridad.
 - [x] **Calendario (`/calendar`):** Agrega eventos y navega entre vistas de mes y día.

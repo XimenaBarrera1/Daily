@@ -82,7 +82,7 @@ export function QuickAddTaskDialog({ isOpen, onClose, onTaskCreated }: QuickAddT
 
         const scheduledTime = new Date(new Date(dueDateTime).getTime() - offsetMs).toISOString();
 
-        await supabase.from('reminders').insert({
+        const { error: reminderError } = await supabase.from('reminders').insert({
           user_id: user.id,
           task_id: task.id,
           scheduled_at: scheduledTime,
@@ -90,6 +90,14 @@ export function QuickAddTaskDialog({ isOpen, onClose, onTaskCreated }: QuickAddT
           status: 'pending',
           idempotency_key: `task-${task.id}-${scheduledTime}`,
         });
+
+        if (reminderError) {
+          console.error('Task was saved, but its reminder could not be scheduled:', reminderError);
+          setError(locale === 'es'
+            ? 'La tarea quedó guardada, pero el recordatorio no se creó. No vuelvas a guardar la tarea; revisa la configuración de notificaciones.'
+            : 'The task was saved, but its reminder was not created. Do not save the task again; check notification settings.');
+          return;
+        }
       }
 
       // Reset form

@@ -63,6 +63,45 @@ export function AppLayout({ children, title }: AppLayoutProps) {
     loadUserData();
   }, []);
 
+  useEffect(() => {
+    let isProcessing = false;
+    const processDueReminders = async () => {
+      if (isProcessing || document.visibilityState === 'hidden') return;
+
+      const lockKey = 'tempo:local-reminder-check';
+      const now = Date.now();
+      if (Number(localStorage.getItem(lockKey) || 0) > now) return;
+
+      const lockUntil = String(now + 20000);
+      localStorage.setItem(lockKey, lockUntil);
+      isProcessing = true;
+
+      try {
+        const response = await fetch('/api/reminders/process', { method: 'POST' });
+        if (!response.ok) return;
+
+        const result = await response.json();
+        if (result.sent > 0) {
+          window.dispatchEvent(new CustomEvent('tempo:data-updated'));
+        }
+        if (result.failed > 0) {
+          window.dispatchEvent(new CustomEvent('tempo:reminder-failed'));
+        }
+      } catch (error) {
+        console.warn('Local reminder check failed:', error);
+      } finally {
+        isProcessing = false;
+        if (localStorage.getItem(lockKey) === lockUntil) {
+          localStorage.removeItem(lockKey);
+        }
+      }
+    };
+
+    void processDueReminders();
+    const interval = window.setInterval(processDueReminders, 15000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   return (
     <div
       suppressHydrationWarning

@@ -134,7 +134,7 @@ async function handleReminderProcessing(request: NextRequest) {
         }
 
         // A. In-App Notification (Always record unless explicit failure)
-        await supabase.from('notifications').insert({
+        const { error: notificationError } = await supabase.from('notifications').insert({
           user_id: reminder.user_id,
           title,
           body,
@@ -143,15 +143,18 @@ async function handleReminderProcessing(request: NextRequest) {
           related_event_id: reminder.event_id,
           is_read: false,
         });
+        if (notificationError) throw notificationError;
 
         // B. Browser Push Notification
         if (profile?.push_reminders_enabled !== false && !quiet && vapidPublic && vapidPrivate) {
-          const { data: subs } = await supabase
+          const { data: subs, error: subscriptionsError } = await supabase
             .from('push_subscriptions')
             .select('*')
             .eq('user_id', reminder.user_id);
+          if (subscriptionsError) throw subscriptionsError;
 
           if (subs && subs.length > 0) {
+            let pushFailure: Error | null = null;
             for (const sub of subs) {
               const pushSubscription = {
                 endpoint: sub.endpoint,
@@ -174,10 +177,14 @@ async function handleReminderProcessing(request: NextRequest) {
               } catch (pushErr: any) {
                 // If subscription expired or was cancelled, remove from DB
                 if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
-                  await supabase.from('push_subscriptions').delete().eq('id', sub.id);
+                  const { error: deleteError } = await supabase.from('push_subscriptions').delete().eq('id', sub.id);
+                  if (deleteError) throw deleteError;
                 }
+                console.error(`[Cron] Push delivery failed for reminder ${reminder.id}:`, pushErr);
+                pushFailure = new Error(pushErr.message || 'Browser push delivery failed.');
               }
             }
+            if (pushFailure) throw pushFailure;
           }
         }
 
@@ -211,13 +218,14 @@ async function handleReminderProcessing(request: NextRequest) {
         }
 
         // Mark reminder as successfully sent
-        await supabase
+        const { error: statusError } = await supabase
           .from('reminders')
           .update({
             status: 'sent',
             sent_at: new Date().toISOString(),
           })
           .eq('id', reminder.id);
+        if (statusError) throw statusError;
 
         results.sent++;
       } catch (err: any) {

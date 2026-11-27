@@ -52,6 +52,53 @@ const THEMES: ThemeInfo[] = [
   },
 ];
 
+// Apply the active tokens inline as well as through globals.css. This keeps a
+// deployed theme change immediate even when a client has an older cached CSS file.
+const THEME_TOKENS: Record<ThemeStyle, Record<string, string>> = {
+  minimal: {
+    '--background': '#F9F7FD', '--surface': '#FFFFFF', '--surface-secondary': '#F2ECFB', '--surface-hover': '#E9DEFA',
+    '--foreground': '#23153C', '--muted-foreground': '#675385', '--border': '#E6DAFA', '--border-strong': '#CFC0E8',
+    '--border-focus': '#6D44C2', '--primary': '#6D44C2', '--primary-hover': '#5532A0', '--primary-light': '#F3EEFC',
+    '--primary-foreground': '#FFFFFF', '--accent': '#B89BF0', '--accent-soft': '#EDE5FA',
+    '--primary-gradient': 'linear-gradient(135deg, #6D44C2 0%, #512E99 100%)',
+    '--hero-gradient': 'linear-gradient(135deg, #6D44C2 0%, #8258DE 50%, #482390 100%)',
+    '--success': '#238636', '--success-light': '#E6F4EA', '--success-soft': '#E6F4EA', '--success-border': '#86C994',
+    '--warning': '#B45309', '--warning-light': '#FEF3C7', '--warning-soft': '#FEF3C7', '--warning-border': '#E7B448',
+    '--danger': '#C53030', '--danger-light': '#FDE8E8', '--danger-soft': '#FDE8E8', '--danger-border': '#E5A0A0',
+    '--card-shadow': '0 2px 10px -2px rgba(35, 21, 60, 0.05), 0 1px 3px rgba(35, 21, 60, 0.03)',
+    '--card-shadow-hover': '0 12px 28px -4px rgba(35, 21, 60, 0.1), 0 4px 12px -2px rgba(35, 21, 60, 0.05)',
+    '--shadow-card': '0 2px 10px -2px rgba(35, 21, 60, 0.05), 0 1px 3px rgba(35, 21, 60, 0.03)',
+  },
+  rose: {
+    '--background': '#FFF5FA', '--surface': '#FFFCFE', '--surface-secondary': '#FBEAF3', '--surface-hover': '#F7DCEB',
+    '--foreground': '#321629', '--muted-foreground': '#79556B', '--border': '#EED2E2', '--border-strong': '#D7A9C1',
+    '--border-focus': '#BE4A8B', '--primary': '#BE4A8B', '--primary-hover': '#9B356F', '--primary-light': '#FBE5F0',
+    '--primary-foreground': '#FFFFFF', '--accent': '#F09BC6', '--accent-soft': '#FCE8F2',
+    '--primary-gradient': 'linear-gradient(135deg, #BE4A8B 0%, #8F326E 100%)',
+    '--hero-gradient': 'linear-gradient(135deg, #F7D5E7 0%, #F4B7D4 50%, #D87AAA 100%)',
+    '--success': '#238636', '--success-light': '#E6F4EA', '--success-soft': '#E6F4EA', '--success-border': '#86C994',
+    '--warning': '#A84E0B', '--warning-light': '#FEF3C7', '--warning-soft': '#FEF3C7', '--warning-border': '#E7B448',
+    '--danger': '#B42335', '--danger-light': '#FDE8E8', '--danger-soft': '#FDE8E8', '--danger-border': '#E5A0A0',
+    '--card-shadow': '0 2px 10px -2px rgba(76, 31, 58, 0.06), 0 1px 3px rgba(76, 31, 58, 0.04)',
+    '--card-shadow-hover': '0 12px 28px -4px rgba(76, 31, 58, 0.12), 0 4px 12px -2px rgba(76, 31, 58, 0.06)',
+    '--shadow-card': '0 2px 10px -2px rgba(76, 31, 58, 0.06), 0 1px 3px rgba(76, 31, 58, 0.04)',
+  },
+  focus: {
+    '--background': '#11131F', '--surface': '#1C1F30', '--surface-secondary': '#252A3F', '--surface-hover': '#333952',
+    '--foreground': '#F6F3FF', '--muted-foreground': '#AAB0C5', '--border': '#393D54', '--border-strong': '#535873',
+    '--border-focus': '#F077B5', '--primary': '#F077B5', '--primary-hover': '#E65B9F', '--primary-light': '#302943',
+    '--primary-foreground': '#261020', '--accent': '#9690F4', '--accent-soft': '#292944',
+    '--primary-gradient': 'linear-gradient(135deg, #F077B5 0%, #D75499 100%)',
+    '--hero-gradient': 'linear-gradient(135deg, #292944 0%, #1C1F30 55%, #11131F 100%)',
+    '--success': '#5CD6A0', '--success-light': '#173B32', '--success-soft': '#173B32', '--success-border': '#347E62',
+    '--warning': '#F2C267', '--warning-light': '#45351B', '--warning-soft': '#45351B', '--warning-border': '#806331',
+    '--danger': '#FF8B95', '--danger-light': '#48232D', '--danger-soft': '#48232D', '--danger-border': '#874650',
+    '--card-shadow': '0 2px 10px -2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25)',
+    '--card-shadow-hover': '0 12px 28px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3)',
+    '--shadow-card': '0 2px 10px -2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25)',
+  },
+};
+
 const LEGACY_THEME_MAP: Record<string, ThemeStyle> = {
   minimal: 'minimal',
   rose: 'rose',
@@ -73,7 +120,11 @@ function normalizeTheme(value: unknown): ThemeStyle {
 }
 
 function applyTheme(theme: ThemeStyle) {
-  document.documentElement.setAttribute('data-theme', theme);
+  const root = document.documentElement;
+  root.setAttribute('data-theme', theme);
+  for (const [token, value] of Object.entries(THEME_TOKENS[theme])) {
+    root.style.setProperty(token, value);
+  }
   const themeColor = THEMES.find((item) => item.id === theme)?.bgPreview;
   const themeColorMeta = document.querySelector('meta[name="theme-color"]');
   if (themeColor && themeColorMeta) themeColorMeta.setAttribute('content', themeColor);

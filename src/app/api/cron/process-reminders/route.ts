@@ -144,20 +144,19 @@ async function handleReminderProcessing(request: NextRequest) {
         const shouldSendPush = (reminder.channel === 'all' || reminder.channel === 'push')
           && profile?.push_reminders_enabled !== false
           && !quiet;
-        if (shouldSendPush && (!vapidPublic || !vapidPrivate)) {
-          throw new Error('Web Push is enabled for this reminder, but the VAPID keys are not configured.');
-        }
-        let pushSubscriptions = null;
-        if (shouldSendPush) {
+        let pushSubscriptions: any[] = [];
+        if (shouldSendPush && vapidPublic && vapidPrivate) {
           const { data: subscriptions, error: subscriptionsError } = await supabase
             .from('push_subscriptions')
             .select('*')
             .eq('user_id', reminder.user_id);
-          if (subscriptionsError) throw subscriptionsError;
-          if (!subscriptions?.length) {
-            throw new Error('No push subscription is registered for this user. Enable notifications on each device.');
+          if (subscriptionsError) {
+            console.error(`[Cron] Could not load push subscriptions for reminder ${reminder.id}:`, subscriptionsError);
+          } else {
+            pushSubscriptions = subscriptions || [];
           }
-          pushSubscriptions = subscriptions;
+        } else if (shouldSendPush) {
+          console.warn(`[Cron] Skipping remote push for reminder ${reminder.id}: VAPID keys are not configured.`);
         }
 
         // A. In-App Notification (Always record unless explicit failure)
@@ -175,8 +174,9 @@ async function handleReminderProcessing(request: NextRequest) {
 
         // B. Browser Push Notification
         if (shouldSendPush && vapidPublic && vapidPrivate) {
-          if (pushSubscriptions && pushSubscriptions.length > 0) {
-            let pushFailure: Error | null = null;
+          if (pushSubscriptions.length === 0) {
+            console.warn(`[Cron] No remote push subscription for reminder ${reminder.id}; keeping the in-app notification.`);
+          } else {
             for (const sub of pushSubscriptions) {
               const pushSubscription = {
                 endpoint: sub.endpoint,
@@ -200,13 +200,11 @@ async function handleReminderProcessing(request: NextRequest) {
                 // If subscription expired or was cancelled, remove from DB
                 if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
                   const { error: deleteError } = await supabase.from('push_subscriptions').delete().eq('id', sub.id);
-                  if (deleteError) throw deleteError;
+                  if (deleteError) console.error(`[Cron] Could not remove expired push subscription ${sub.id}:`, deleteError);
                 }
                 console.error(`[Cron] Push delivery failed for reminder ${reminder.id}:`, pushErr);
-                pushFailure = new Error(pushErr.message || 'Browser push delivery failed.');
               }
             }
-            if (pushFailure) throw pushFailure;
           }
         }
 

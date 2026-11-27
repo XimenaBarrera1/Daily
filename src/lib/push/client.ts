@@ -177,8 +177,8 @@ export async function subscribeToPushNotifications(locale: 'es' | 'en' = 'es'): 
             success: false,
             isPushServiceBlocked: true,
             error: locale === 'es'
-              ? 'El servicio Push remoto del navegador no respondió (habitual en Brave o modo incógnito). En Brave, activa "Usar servicios de Google para mensajería push" en Configuración > Privacidad. Las notificaciones nativas de Tempo seguirán funcionando.'
-              : 'Remote browser push service did not respond (common in Brave or Incognito mode). In-app notifications in Tempo continue working normally.',
+              ? 'El servicio Push remoto del navegador no respondió. DAILY puede mostrar alertas del sistema mientras esté abierto y tengas permiso; para recibirlas con DAILY cerrado, activa Push en un navegador compatible (en Brave, habilita los servicios de Google para mensajería Push).'
+              : 'The browser remote Push service did not respond. DAILY can show system alerts while it is open and permission is granted; to receive alerts while DAILY is closed, enable Push in a compatible browser.',
           };
         }
         return {

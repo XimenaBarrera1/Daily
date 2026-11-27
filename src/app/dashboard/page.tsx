@@ -1,32 +1,33 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import Link from 'next/link';
 import { AppLayout } from '@/components/layout/app-layout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n';
 import { createClient } from '@/lib/supabase/client';
 import { Task, CalendarEvent, Note } from '@/types';
 import {
-  CheckCircle2,
-  Clock,
+  AlertCircle,
+  ArrowRight,
+  BookOpen,
   Calendar as CalendarIcon,
+  Check,
+  Clock,
+  GraduationCap,
+  ListChecks,
   Plus,
   Sparkles,
-  ArrowRight,
-  AlertCircle,
   Timer,
-  ChevronRight,
-  BookOpen,
-  Pin,
-  GraduationCap,
-  Flame,
-  Check,
 } from 'lucide-react';
 import { QuickAddTaskDialog } from '@/components/modals/quick-add-task-dialog';
 import { QuickAddEventDialog } from '@/components/modals/quick-add-event-dialog';
+// NUEVO: Importamos el mini calendario
+import { MiniWeekCalendar } from '@/components/ui/mini-week-calendar';
 
 function DashboardContent() {
   const { locale, t, formatDate, formatTime } = useI18n();
@@ -35,31 +36,37 @@ function DashboardContent() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [recentNotes, setRecentNotes] = useState<Note[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [now, setNow] = useState<Date | null>(null);
 
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
 
-  // Time of day greeting
   const getGreeting = () => {
     const hour = (now || new Date()).getHours();
-    if (hour < 12) return t('dashboard.greetingMorning');
-    if (hour < 18) return t('dashboard.greetingAfternoon');
+
+    if (hour < 12) {
+      return t('dashboard.greetingMorning');
+    }
+
+    if (hour < 18) {
+      return t('dashboard.greetingAfternoon');
+    }
+
     return t('dashboard.greetingEvening');
   };
 
   const loadDashboardData = useCallback(async () => {
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (!user) {
-        setIsLoading(false);
         return;
       }
 
-      // 1. User profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name')
@@ -72,18 +79,19 @@ function DashboardContent() {
         setUserName(user.email.split('@')[0]);
       }
 
-      // 2. Fetch Tasks
       const { data: userTasks } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', user.id)
-        .order('due_at', { ascending: true, nullsFirst: false });
+        .order('due_at', {
+          ascending: true,
+          nullsFirst: false,
+        });
 
       if (userTasks) {
         setTasks(userTasks as Task[]);
       }
 
-      // 3. Fetch upcoming Events
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
 
@@ -92,37 +100,54 @@ function DashboardContent() {
         .select('*')
         .eq('user_id', user.id)
         .gte('ends_at', startOfToday.toISOString())
-        .order('starts_at', { ascending: true })
+        .order('starts_at', {
+          ascending: true,
+        })
         .limit(10);
 
       if (userEvents) {
         setEvents(userEvents as CalendarEvent[]);
       }
 
-      // 4. Fetch Recent Notes
       try {
         const { data: notesData } = await supabase
           .from('notes')
           .select('*')
           .eq('user_id', user.id)
-          .order('is_pinned', { ascending: false })
-          .order('updated_at', { ascending: false })
+          .order('is_pinned', {
+            ascending: false,
+          })
+          .order('updated_at', {
+            ascending: false,
+          })
           .limit(3);
 
         if (notesData && notesData.length > 0) {
           setRecentNotes(notesData as Note[]);
         } else {
-          const local = localStorage.getItem('daily_workspace_notes');
-          if (local) setRecentNotes(JSON.parse(local).slice(0, 3));
+          const localNotes = localStorage.getItem(
+            'daily_workspace_notes'
+          );
+
+          if (localNotes) {
+            setRecentNotes(
+              JSON.parse(localNotes).slice(0, 3)
+            );
+          }
         }
       } catch {
-        const local = localStorage.getItem('daily_workspace_notes');
-        if (local) setRecentNotes(JSON.parse(local).slice(0, 3));
+        const localNotes = localStorage.getItem(
+          'daily_workspace_notes'
+        );
+
+        if (localNotes) {
+          setRecentNotes(
+            JSON.parse(localNotes).slice(0, 3)
+          );
+        }
       }
-    } catch (err) {
-      console.warn('Dashboard data fetch note:', err);
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      console.warn('Error cargando el dashboard:', error);
     }
   }, []);
 
@@ -134,517 +159,651 @@ function DashboardContent() {
       setNow(new Date());
       loadDashboardData();
     };
-    window.addEventListener('tempo:data-updated', handleDataUpdate);
+
+    window.addEventListener(
+      'tempo:data-updated',
+      handleDataUpdate
+    );
 
     return () => {
-      window.removeEventListener('tempo:data-updated', handleDataUpdate);
+      window.removeEventListener(
+        'tempo:data-updated',
+        handleDataUpdate
+      );
     };
   }, [loadDashboardData]);
 
-  // Calculate task subsets
-  const todayStr = now ? now.toISOString().split('T')[0] : '';
+  const todayString = now
+    ? now.toISOString().split('T')[0]
+    : '';
 
-  const pendingTasks = tasks.filter((t) => t.status !== 'completed');
-  const completedTasks = tasks.filter((t) => t.status === 'completed');
+  const pendingTasks = tasks.filter(
+    (task) => task.status !== 'completed'
+  );
 
-  const todayTasks = tasks.filter((t) => {
-    if (!t.due_at || !todayStr) return false;
-    return t.due_at.startsWith(todayStr);
+  const completedTasks = tasks.filter(
+    (task) => task.status === 'completed'
+  );
+
+  const todayTasks = tasks.filter((task) => {
+    if (!task.due_at || !todayString) {
+      return false;
+    }
+
+    return task.due_at.startsWith(todayString);
   });
 
-  const overdueTasks = tasks.filter((t) => {
-    if (!t.due_at || t.status === 'completed' || !now) return false;
-    return new Date(t.due_at) < now && !t.due_at.startsWith(todayStr);
+  const overdueTasks = tasks.filter((task) => {
+    if (!task.due_at || task.status === 'completed' || !now) {
+      return false;
+    }
+
+    return (
+      new Date(task.due_at) < now &&
+      !task.due_at.startsWith(todayString)
+    );
   });
 
-  // Next upcoming event
-  const nextEvent = events.find((e) => (now ? new Date(e.ends_at) > now : false));
+  const nextEvent = events.find((event) => {
+    if (!now) {
+      return false;
+    }
 
-  // Upcoming deadlines (next 7 days)
+    return new Date(event.ends_at) > now;
+  });
+
   const upcomingDeadlines = pendingTasks
-    .filter((t) => (now && t.due_at ? new Date(t.due_at) >= now : false))
+    .filter((task) => {
+      if (!now || !task.due_at) {
+        return false;
+      }
+
+      return new Date(task.due_at) >= now;
+    })
     .slice(0, 5);
 
-  // Daily Progress percentage
-  const totalRelevantToday = todayTasks.length;
-  const completedToday = todayTasks.filter((t) => t.status === 'completed').length;
-  const progressPercent = totalRelevantToday > 0 ? Math.round((completedToday / totalRelevantToday) * 100) : 0;
+  const completedToday = todayTasks.filter(
+    (task) => task.status === 'completed'
+  ).length;
 
-  // Toggle task completion
+  const progressPercent =
+    todayTasks.length > 0
+      ? Math.round(
+          (completedToday / todayTasks.length) * 100
+        )
+      : 0;
+
   const handleToggleTask = async (task: Task) => {
     const isNowCompleted = task.status !== 'completed';
-    const newStatus = isNowCompleted ? 'completed' : 'pending';
+    const newStatus = isNowCompleted
+      ? 'completed'
+      : 'pending';
 
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === task.id
-          ? { ...t, status: newStatus, completed_at: isNowCompleted ? new Date().toISOString() : null }
-          : t
+    const completedAt = isNowCompleted
+      ? new Date().toISOString()
+      : null;
+
+    setTasks((currentTasks) =>
+      currentTasks.map((currentTask) =>
+        currentTask.id === task.id
+          ? {
+              ...currentTask,
+              status: newStatus,
+              completed_at: completedAt,
+            }
+          : currentTask
       )
     );
 
     try {
       const supabase = createClient();
+
       await supabase
         .from('tasks')
         .update({
           status: newStatus,
-          completed_at: isNowCompleted ? new Date().toISOString() : null,
+          completed_at: completedAt,
         })
         .eq('id', task.id);
-    } catch (err) {
-      console.warn('Error toggling task:', err);
+    } catch (error) {
+      console.warn('Error actualizando la tarea:', error);
       loadDashboardData();
     }
   };
 
   return (
     <AppLayout title={t('nav.overview')}>
-      {/* 1. Warm Editorial Welcome Banner */}
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 sm:p-8 mb-8 shadow-[var(--card-shadow)] relative overflow-hidden transition-all">
-        {/* Subtle background glow */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-[var(--primary)] opacity-[0.04] rounded-full blur-3xl pointer-events-none" />
+      <main className="mx-auto max-w-7xl pb-12">
+        <section className="pb-16 pt-2">
+          <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <div className="mb-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--primary)]">
+                <GraduationCap className="h-4 w-4" />
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary-light)] text-[var(--primary)] text-xs font-semibold mb-3">
-              <GraduationCap className="w-3.5 h-3.5" />
-              <span>{locale === 'es' ? 'Semestre Activo' : 'Current Semester'}</span>
-            </div>
-
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--foreground)]">
-              {getGreeting()}, {userName || (locale === 'es' ? 'Estudiante' : 'Student')}
-            </h2>
-            <p className="text-xs sm:text-sm text-[var(--muted-foreground)] mt-1.5 max-w-xl leading-relaxed">
-              {t('dashboard.tagline')}
-            </p>
-          </div>
-
-          {/* Quick Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <Link href="/notes">
-              <button className="flex items-center gap-1.5 py-2 px-3.5 bg-[var(--surface-secondary)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--foreground)] text-xs font-semibold rounded-2xl transition-all shadow-xs active:scale-[0.98]">
-                <BookOpen className="w-3.5 h-3.5 text-[var(--primary)]" />
-                <span>{t('dashboard.quickAddNote')}</span>
-              </button>
-            </Link>
-
-            <button
-              onClick={() => setIsEventModalOpen(true)}
-              className="flex items-center gap-1.5 py-2 px-3.5 bg-[var(--surface-secondary)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--foreground)] text-xs font-semibold rounded-2xl transition-all shadow-xs active:scale-[0.98]"
-            >
-              <CalendarIcon className="w-3.5 h-3.5 text-[var(--primary)]" />
-              <span>{t('dashboard.quickAddEvent')}</span>
-            </button>
-
-            <button
-              onClick={() => setIsTaskModalOpen(true)}
-              className="flex items-center gap-1.5 py-2.5 px-4 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-bold rounded-2xl transition-all shadow-[var(--card-shadow)] active:scale-[0.98]"
-            >
-              <Plus className="w-4 h-4" />
-              <span>{t('dashboard.quickAddTask')}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Top Metric Stats in Refined Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {/* Pending Card */}
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 shadow-[var(--card-shadow)] hover:border-[var(--primary)]/40 transition-all">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] block">
-            {t('dashboard.pendingCard')}
-          </span>
-          <div className="flex items-baseline justify-between mt-2">
-            <span className="text-3xl font-extrabold text-[var(--foreground)] tracking-tight">
-              {pendingTasks.length}
-            </span>
-            <span className="text-xs text-[var(--muted-foreground)] font-medium">
-              {todayTasks.filter((t) => t.status !== 'completed').length} {locale === 'es' ? 'para hoy' : 'for today'}
-            </span>
-          </div>
-        </div>
-
-        {/* Completed Card */}
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 shadow-[var(--card-shadow)] hover:border-[var(--primary)]/40 transition-all">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] block">
-            {t('dashboard.completedCard')}
-          </span>
-          <div className="flex items-baseline justify-between mt-2">
-            <span className="text-3xl font-extrabold text-[var(--success)] tracking-tight">
-              {completedTasks.length}
-            </span>
-            <span className="text-xs text-[var(--success)] font-medium">
-              {completedToday} {locale === 'es' ? 'hoy' : 'today'}
-            </span>
-          </div>
-        </div>
-
-        {/* Overdue Card */}
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 shadow-[var(--card-shadow)] hover:border-[var(--primary)]/40 transition-all">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] block">
-            {t('dashboard.overdueCard')}
-          </span>
-          <div className="flex items-baseline justify-between mt-2">
-            <span className={`text-3xl font-extrabold tracking-tight ${overdueTasks.length > 0 ? 'text-[var(--danger)]' : 'text-[var(--foreground)]'}`}>
-              {overdueTasks.length}
-            </span>
-            {overdueTasks.length > 0 && (
-              <span className="text-xs text-[var(--danger)] font-medium flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5" />
-                {locale === 'es' ? 'Revisar' : 'Review'}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Daily Progress Card */}
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 shadow-[var(--card-shadow)] hover:border-[var(--primary)]/40 transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-              {t('dashboard.dailyProgress')}
-            </span>
-            <span className="text-xs font-bold text-[var(--primary)]">{progressPercent}%</span>
-          </div>
-
-          <div className="w-full bg-[var(--surface-secondary)] h-2 rounded-full overflow-hidden mb-2">
-            <div
-              className="bg-[var(--primary)] h-full rounded-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-
-          <span className="text-[11px] text-[var(--muted-foreground)] block text-right">
-            {completedToday}/{totalRelevantToday || 0} {locale === 'es' ? 'completadas hoy' : 'done today'}
-          </span>
-        </div>
-      </div>
-
-      {/* 3. Main Two-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Today's Tasks & Deadlines & Notes */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Today's Focus Section */}
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 shadow-[var(--card-shadow)]">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="text-base font-bold text-[var(--foreground)] tracking-tight">
-                  {t('dashboard.todayTasks')}
-                </h3>
-                <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-                  {todayTasks.length > 0
-                    ? `${todayTasks.length} ${locale === 'es' ? 'tareas asignadas para hoy' : 'tasks scheduled for today'}`
-                    : t('dashboard.emptyStateDesc')}
-                </p>
+                <span>
+                  {locale === 'es'
+                    ? 'Tu espacio universitario'
+                    : 'Your university workspace'}
+                </span>
               </div>
 
+              <h1 className="text-4xl font-semibold leading-[1.04] tracking-[-0.05em] text-[var(--foreground)] sm:text-6xl">
+                {getGreeting()},{' '}
+                {userName ||
+                  (locale === 'es'
+                    ? 'estudiante'
+                    : 'student')}
+                .
+
+                <span className="block text-[var(--muted-foreground)]">
+                  {locale === 'es'
+                    ? 'Haz espacio para lo que importa hoy.'
+                    : 'Make room for what matters today.'}
+                </span>
+              </h1>
+
+              <p className="mt-6 max-w-xl text-base leading-7 text-[var(--muted-foreground)]">
+                {t('dashboard.tagline')}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
               <Link
                 href="/planner"
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:opacity-80 transition-colors"
+                className="inline-flex items-center gap-2 rounded-full bg-[var(--surface-secondary)] px-4 py-2.5 text-sm font-semibold text-[var(--foreground)] transition hover:bg-[var(--primary-light)]"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{t('dashboard.planMyDay')}</span>
+                <Sparkles className="h-4 w-4 text-[var(--primary)]" />
+
+                {t('dashboard.planMyDay')}
               </Link>
+
+              <button
+                type="button"
+                onClick={() => setIsTaskModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full bg-[var(--foreground)] px-4 py-2.5 text-sm font-semibold text-[var(--background)] transition hover:opacity-80"
+              >
+                <Plus className="h-4 w-4" />
+
+                {t('dashboard.quickAddTask')}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="mb-20">
+          <div className="mb-7 flex items-end justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--primary)]">
+                {locale === 'es'
+                  ? 'Una mirada rápida'
+                  : 'A quick look'}
+              </p>
+
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-3xl">
+                {locale === 'es'
+                  ? 'Lo que está pasando.'
+                  : 'What is happening.'}
+              </h2>
             </div>
 
-            {todayTasks.length === 0 ? (
-              <div className="py-10 text-center rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-secondary)]/50">
-                <Clock className="w-8 h-8 text-[var(--muted-foreground)] mx-auto mb-2 opacity-60" />
-                <h4 className="text-sm font-semibold text-[var(--foreground)]">{t('dashboard.emptyStateTitle')}</h4>
-                <p className="text-xs text-[var(--muted-foreground)] max-w-sm mx-auto mt-1 mb-4">
-                  {t('dashboard.emptyStateDesc')}
-                </p>
-                <Button variant="primary" size="sm" onClick={() => setIsTaskModalOpen(true)}>
-                  <Plus className="w-4 h-4 mr-1" />
-                  {t('tasks.newTask')}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {todayTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
-                      task.status === 'completed'
-                        ? 'bg-[var(--surface-secondary)]/40 border-[var(--border)] opacity-60'
-                        : 'bg-[var(--surface)] border-[var(--border)] hover:border-[var(--primary)]/40 shadow-xs'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => handleToggleTask(task)}
-                        className={`w-5 h-5 rounded-lg flex items-center justify-center transition-all ${
-                          task.status === 'completed'
-                            ? 'bg-[var(--primary)] text-white shadow-xs'
-                            : 'border-2 border-[var(--border)] hover:border-[var(--primary)]'
-                        }`}
-                        aria-label="Toggle task status"
-                      >
-                        {task.status === 'completed' && <Check className="w-3.5 h-3.5 stroke-[2.5px]" />}
-                      </button>
+            <Link
+              href="/progress"
+              className="hidden items-center gap-1 text-sm font-semibold text-[var(--primary)] sm:inline-flex"
+            >
+              {locale === 'es'
+                ? 'Ver progreso'
+                : 'View progress'}
 
-                      <div>
-                        <p
-                          className={`text-sm font-semibold text-[var(--foreground)] ${
-                            task.status === 'completed' ? 'line-through text-[var(--muted-foreground)]' : ''
-                          }`}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-4">
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-[var(--muted-foreground)]">
+                <ListChecks className="h-4 w-4 text-[var(--primary)]" />
+
+                <span className="text-xs">
+                  {t('dashboard.pendingCard')}
+                </span>
+              </div>
+
+              <p className="text-4xl font-semibold tracking-tight text-[var(--foreground)]">
+                {pendingTasks.length}
+              </p>
+
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                {todayTasks.filter(
+                  (task) => task.status !== 'completed'
+                ).length}{' '}
+                {locale === 'es'
+                  ? 'para hoy'
+                  : 'for today'}
+              </p>
+            </div>
+
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-[var(--muted-foreground)]">
+                <Check className="h-4 w-4 text-[var(--primary)]" />
+
+                <span className="text-xs">
+                  {t('dashboard.completedCard')}
+                </span>
+              </div>
+
+              <p className="text-4xl font-semibold tracking-tight text-[var(--foreground)]">
+                {completedTasks.length}
+              </p>
+
+              <p className="mt-1 text-xs text-[var(--success)]">
+                {completedToday}{' '}
+                {locale === 'es'
+                  ? 'completadas hoy'
+                  : 'completed today'}
+              </p>
+            </div>
+
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-[var(--muted-foreground)]">
+                <AlertCircle className="h-4 w-4 text-[var(--primary)]" />
+
+                <span className="text-xs">
+                  {t('dashboard.overdueCard')}
+                </span>
+              </div>
+
+              <p
+                className={`text-4xl font-semibold tracking-tight ${
+                  overdueTasks.length > 0
+                    ? 'text-[var(--danger)]'
+                    : 'text-[var(--foreground)]'
+                }`}
+              >
+                {overdueTasks.length}
+              </p>
+
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                {overdueTasks.length > 0
+                  ? locale === 'es'
+                    ? 'para revisar'
+                    : 'to review'
+                  : locale === 'es'
+                    ? 'todo en orden'
+                    : 'all clear'}
+              </p>
+            </div>
+
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-[var(--muted-foreground)]">
+                <Timer className="h-4 w-4 text-[var(--primary)]" />
+
+                <span className="text-xs">
+                  {t('dashboard.dailyProgress')}
+                </span>
+              </div>
+
+              <p className="text-4xl font-semibold tracking-tight text-[var(--foreground)]">
+                {progressPercent}%
+              </p>
+
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                {completedToday}/{todayTasks.length || 0}{' '}
+                {locale === 'es'
+                  ? 'completadas'
+                  : 'completed'}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mb-20">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--primary)]">
+                Agenda
+              </p>
+
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+                {locale === 'es'
+                  ? 'Tu día, sin ruido.'
+                  : 'Your day, without the noise.'}
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-5">
+              <button
+                type="button"
+                onClick={() => setIsEventModalOpen(true)}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--primary)]"
+              >
+                <Plus className="h-4 w-4" />
+
+                {locale === 'es'
+                  ? 'Agregar evento'
+                  : 'Add event'}
+              </button>
+
+              <Link
+                href="/calendar"
+                className="hidden items-center gap-1 text-sm font-semibold text-[var(--muted-foreground)] transition hover:text-[var(--primary)] sm:inline-flex"
+              >
+                {t('nav.calendar')}
+
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid gap-14 lg:grid-cols-[1.35fr_0.65fr]">
+            <div>
+              {/* NUEVO: Mini Calendario integrado */}
+              <div className="mb-8">
+                <MiniWeekCalendar events={events} tasks={tasks} />
+              </div>
+
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <CalendarIcon className="h-5 w-5 text-[var(--primary)]" />
+
+                  <p className="text-sm font-semibold capitalize text-[var(--foreground)]">
+                    {formatDate(
+                      new Date().toISOString(),
+                      {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                      }
+                    )}
+                  </p>
+                </div>
+
+                <span className="text-xs text-[var(--muted-foreground)]">
+                  {todayTasks.length}{' '}
+                  {locale === 'es'
+                    ? 'tareas hoy'
+                    : 'tasks today'}
+                </span>
+              </div>
+
+              <div className="space-y-6">
+                {todayTasks.length === 0 && !nextEvent ? (
+                  <div className="py-12">
+                    <Clock className="h-8 w-8 text-[var(--primary)] opacity-60" />
+
+                    <h3 className="mt-5 text-lg font-semibold text-[var(--foreground)]">
+                      {t('dashboard.emptyStateTitle')}
+                    </h3>
+
+                    <p className="mt-2 max-w-md text-sm leading-6 text-[var(--muted-foreground)]">
+                      {t('dashboard.emptyStateDesc')}
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsTaskModalOpen(true)}
+                      className="mt-5 text-sm font-semibold text-[var(--primary)]"
+                    >
+                      + {t('tasks.newTask')}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {todayTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="group flex items-center justify-between gap-4"
+                      >
+                        <div className="flex min-w-0 items-center gap-4">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleToggleTask(task)
+                            }
+                            aria-label={
+                              locale === 'es'
+                                ? 'Cambiar estado de tarea'
+                                : 'Change task status'
+                            }
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition ${
+                              task.status === 'completed'
+                                ? 'bg-[var(--primary)] text-white'
+                                : 'bg-[var(--surface-secondary)] text-transparent hover:bg-[var(--primary-light)]'
+                            }`}
+                          >
+                            <Check className="h-3 w-3" />
+                          </button>
+
+                          <div className="min-w-0">
+                            <p
+                              className={`truncate text-sm font-semibold ${
+                                task.status === 'completed'
+                                  ? 'text-[var(--muted-foreground)] line-through'
+                                  : 'text-[var(--foreground)]'
+                              }`}
+                            >
+                              {task.title}
+                            </p>
+
+                            <p className="mt-1 truncate text-xs text-[var(--muted-foreground)]">
+                              {task.subject ||
+                                (locale === 'es'
+                                  ? 'Tarea universitaria'
+                                  : 'University task')}{' '}
+                              · {task.estimated_minutes} min
+                            </p>
+                          </div>
+                        </div>
+
+                        <Link
+                          href={`/focus?taskId=${task.id}`}
+                          title={t('dashboard.startFocus')}
+                          className="rounded-full p-2 text-[var(--muted-foreground)] opacity-0 transition hover:bg-[var(--surface-secondary)] hover:text-[var(--primary)] group-hover:opacity-100"
                         >
-                          {task.title}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-[var(--muted-foreground)]">
-                          {task.subject && (
-                            <span className="text-[10px] font-bold text-[var(--primary)] bg-[var(--primary-light)] px-2 py-0.2 rounded-md">
-                              {task.subject}
-                            </span>
-                          )}
-                          <span>•</span>
-                          <span>{task.estimated_minutes} min</span>
-                          {task.due_at && (
-                            <>
-                              <span>•</span>
-                              <span>{formatTime(task.due_at)}</span>
-                            </>
-                          )}
+                          <Timer className="h-4 w-4" />
+                        </Link>
+                      </div>
+                    ))}
+
+                    {nextEvent && (
+                      <div className="flex items-center gap-4 bg-[var(--primary-light)]/60 px-4 py-4 rounded-xl">
+                        <CalendarIcon className="h-5 w-5 shrink-0 text-[var(--primary)]" />
+
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-[var(--foreground)]">
+                            {nextEvent.title}
+                          </p>
+
+                          <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                            {formatTime(nextEvent.starts_at)} –{' '}
+                            {formatTime(nextEvent.ends_at)}
+                          </p>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={
-                          task.priority === 'high'
-                            ? 'danger'
-                            : task.priority === 'medium'
-                            ? 'warning'
-                            : 'neutral'
-                        }
-                      >
-                        {task.priority}
-                      </Badge>
-
-                      <Link
-                        href={`/focus?taskId=${task.id}`}
-                        title={t('dashboard.startFocus')}
-                        className="p-1.5 text-[var(--muted-foreground)] hover:text-[var(--primary)] hover:bg-[var(--primary-light)] rounded-xl transition-colors"
-                      >
-                        <Timer className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+                    )}
+                  </>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Upcoming Deadlines & Exams Section */}
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 shadow-[var(--card-shadow)]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-[var(--foreground)] tracking-tight">
-                {t('dashboard.upcomingDeadlines')}
-              </h3>
-              <Link href="/tasks" className="text-xs font-bold text-[var(--primary)] hover:underline">
-                {t('common.all')}
-              </Link>
             </div>
 
-            {upcomingDeadlines.length === 0 ? (
-              <p className="text-xs text-[var(--muted-foreground)] py-4">{t('dashboard.noDeadlines')}</p>
-            ) : (
-              <div className="space-y-2">
-                {upcomingDeadlines.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--border)] hover:bg-[var(--surface-secondary)]/50 transition-colors"
-                  >
-                    <div>
-                      <p className="text-xs sm:text-sm font-semibold text-[var(--foreground)]">{task.title}</p>
-                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[var(--muted-foreground)]">
-                        <span>{formatDate(task.due_at, { month: 'short', day: 'numeric', weekday: 'short' })}</span>
-                        {task.due_at && <span>• {formatTime(task.due_at)}</span>}
-                        {task.subject && (
-                          <span className="font-semibold text-[var(--primary)]">• {task.subject}</span>
-                        )}
-                      </div>
-                    </div>
+            <div className="space-y-12">
+              <div>
+                <div className="mb-4 flex items-center gap-2">
+                  <Timer className="h-5 w-5 text-[var(--primary)]" />
 
-                    <Badge
-                      variant={
-                        task.priority === 'high'
-                          ? 'danger'
-                          : task.priority === 'medium'
-                          ? 'warning'
-                          : 'neutral'
-                      }
-                    >
-                      {task.priority}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
+                    {t('nav.focus')}
+                  </p>
+                </div>
 
-          {/* Recent Notes Notebooks (Notion-inspired) */}
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 shadow-[var(--card-shadow)]">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-[var(--primary)]" />
-                <h3 className="text-base font-bold text-[var(--foreground)] tracking-tight">
-                  {t('dashboard.recentNotes')}
+                <h3 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+                  {locale === 'es'
+                    ? 'Un bloque para concentrarte.'
+                    : 'A block to focus.'}
                 </h3>
+
+                <p className="mt-3 text-sm leading-6 text-[var(--muted-foreground)]">
+                  {locale === 'es'
+                    ? 'Veinticinco minutos para avanzar en una sola cosa, sin presión.'
+                    : 'Twenty-five minutes to move one thing forward, without pressure.'}
+                </p>
+
+                <Link
+                  href="/focus"
+                  className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[var(--primary)]"
+                >
+                  {t('dashboard.startFocus')}
+
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
               </div>
-              <Link href="/notes" className="text-xs font-bold text-[var(--primary)] hover:underline flex items-center gap-1">
-                <span>{locale === 'es' ? 'Ver todos los apuntes' : 'View all notes'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+
+              <div>
+                <div className="mb-4 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-[var(--primary)]" />
+
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
+                    {t('dashboard.upcomingDeadlines')}
+                  </p>
+                </div>
+
+                <div className="space-y-5">
+                  {upcomingDeadlines.length === 0 ? (
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      {t('dashboard.noDeadlines')}
+                    </p>
+                  ) : (
+                    upcomingDeadlines
+                      .slice(0, 3)
+                      .map((task) => (
+                        <div
+                          key={task.id}
+                          className="flex items-start justify-between gap-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-[var(--foreground)]">
+                              {task.title}
+                            </p>
+
+                            <p className="mt-1 truncate text-xs text-[var(--muted-foreground)]">
+                              {task.subject || 'DAILY'} ·{' '}
+                              {formatDate(task.due_at, {
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </p>
+                          </div>
+
+                          <span className="shrink-0 text-xs capitalize text-[var(--muted-foreground)]">
+                            {task.priority}
+                          </span>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-14 lg:grid-cols-[1.15fr_0.85fr]">
+          <div>
+            <div className="mb-6 flex items-center gap-3">
+              <BookOpen className="h-5 w-5 text-[var(--primary)]" />
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
+                  {locale === 'es'
+                    ? 'Cuaderno'
+                    : 'Notebook'}
+                </p>
+
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+                  {t('dashboard.recentNotes')}
+                </h2>
+              </div>
             </div>
 
             {recentNotes.length === 0 ? (
-              <div className="py-6 text-center border border-dashed border-[var(--border)] rounded-2xl bg-[var(--surface-secondary)]/30">
-                <p className="text-xs text-[var(--muted-foreground)] mb-3">
+              <div className="py-5">
+                <p className="text-sm text-[var(--muted-foreground)]">
                   {locale === 'es'
-                    ? 'Aún no has registrado apuntes de clase o resúmenes de estudio.'
-                    : 'No class notes or study summaries registered yet.'}
+                    ? 'Tus apuntes aparecerán aquí.'
+                    : 'Your notes will appear here.'}
                 </p>
-                <Link href="/notes">
-                  <Button variant="outline" size="sm">
-                    <Plus className="w-3.5 h-3.5 mr-1" />
-                    {t('notes.newNote')}
-                  </Button>
+
+                <Link
+                  href="/notes"
+                  className="mt-4 inline-flex text-sm font-semibold text-[var(--primary)]"
+                >
+                  + {t('notes.newNote')}
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid gap-6 sm:grid-cols-3">
                 {recentNotes.map((note) => (
                   <Link
                     key={note.id}
                     href="/notes"
-                    className="p-4 rounded-2xl border border-[var(--border)] hover:border-[var(--primary)]/50 hover:bg-[var(--surface-secondary)]/30 transition-all flex flex-col justify-between"
+                    className="group bg-[var(--surface-secondary)]/60 p-5 transition hover:bg-[var(--primary-light)] rounded-xl"
                   >
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        {note.subject ? (
-                          <span className="text-[10px] font-bold text-[var(--primary)] bg-[var(--primary-light)] px-2 py-0.2 rounded-md truncate max-w-[120px]">
-                            {note.subject}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-[var(--muted-foreground)]">Apunte</span>
-                        )}
-                        {note.is_pinned && <Pin className="w-3 h-3 text-[var(--primary)]" />}
-                      </div>
-                      <h4 className="text-xs font-bold text-[var(--foreground)] line-clamp-1">{note.title}</h4>
-                      {note.content && (
-                        <p className="text-[11px] text-[var(--muted-foreground)] mt-1 line-clamp-2 leading-relaxed">
-                          {note.content}
-                        </p>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-[var(--muted-foreground)] mt-3 block">
-                      {formatDate(note.updated_at, { month: 'short', day: 'numeric' })}
-                    </span>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--primary)]">
+                      {note.subject || 'Apunte'}
+                    </p>
+
+                    <h3 className="mt-4 line-clamp-2 text-sm font-semibold text-[var(--foreground)]">
+                      {note.title}
+                    </h3>
+
+                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--muted-foreground)]">
+                      {note.content}
+                    </p>
                   </Link>
                 ))}
               </div>
             )}
           </div>
-        </div>
 
-        {/* Right Column: Next Commitment & Focus Gadget */}
-        <div className="space-y-6">
-          {/* Next Scheduled Commitment Card */}
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 shadow-[var(--card-shadow)]">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-                {t('dashboard.nextEvent')}
-              </span>
-              <CalendarIcon className="w-4 h-4 text-[var(--primary)]" />
+          <div>
+            <div className="mb-6 flex items-center gap-3">
+              <CalendarIcon className="h-5 w-5 text-[var(--primary)]" />
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
+                  {t('nav.schedule')}
+                </p>
+
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+                  {locale === 'es'
+                    ? 'Dale aire a tu semana.'
+                    : 'Give your week some room.'}
+                </h2>
+              </div>
             </div>
 
-            {nextEvent ? (
-              <div className="space-y-3">
-                <div>
-                  <h4 className="text-base font-bold text-[var(--foreground)]">{nextEvent.title}</h4>
-                  {nextEvent.description && (
-                    <p className="text-xs text-[var(--muted-foreground)] mt-1 line-clamp-2">{nextEvent.description}</p>
-                  )}
-                </div>
-
-                <div className="p-3 bg-[var(--primary-light)] rounded-xl text-xs text-[var(--primary)] font-semibold flex items-center justify-between">
-                  <span>{formatDate(nextEvent.starts_at, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                  <span>
-                    {formatTime(nextEvent.starts_at)} - {formatTime(nextEvent.ends_at)}
-                  </span>
-                </div>
-
-                <Link href="/calendar">
-                  <Button variant="outline" size="sm" className="w-full mt-1">
-                    {t('nav.calendar')}
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="py-6 text-center">
-                <p className="text-xs text-[var(--muted-foreground)] mb-3">{t('dashboard.noUpcomingEvents')}</p>
-                <Button variant="outline" size="sm" onClick={() => setIsEventModalOpen(true)}>
-                  <Plus className="w-3.5 h-3.5 mr-1" />
-                  {t('calendar.newEvent')}
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Study Focus Gadget Card */}
-          <div className="bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] rounded-3xl p-6 text-white shadow-md relative overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-white/80">
-                {t('nav.focus')}
-              </span>
-              <Timer className="w-5 h-5 text-white/90" />
-            </div>
-            <h4 className="text-lg font-bold mb-1">
-              {locale === 'es' ? '¿Listo para estudiar?' : 'Ready to study?'}
-            </h4>
-            <p className="text-xs text-white/90 mb-5 leading-relaxed">
+            <p className="text-sm leading-6 text-[var(--muted-foreground)]">
               {locale === 'es'
-                ? 'Inicia un bloque Pomodoro de 25 minutos para preparar exámenes o proyectos sin distracciones.'
-                : 'Start a calm 25-minute Pomodoro block to study for exams or make progress on projects.'}
+                ? 'Organiza tus clases y compromisos en un horario que puedas sostener.'
+                : 'Organize classes and commitments in a schedule you can sustain.'}
             </p>
-            <Link href="/focus">
-              <button className="w-full bg-white text-[var(--foreground)] py-2.5 px-4 rounded-2xl text-xs font-bold hover:bg-white/90 transition-all shadow-xs flex items-center justify-center gap-2 active:scale-[0.98]">
-                <span>{t('dashboard.startFocus')}</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+
+            <Link
+              href="/schedule"
+              className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[var(--primary)]"
+            >
+              {t('schedule.title')}
+
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
+        </section>
+      </main>
 
-          {/* Weekly Timetable Card */}
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 shadow-[var(--card-shadow)]">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-                {t('nav.schedule')}
-              </span>
-              <Clock className="w-4 h-4 text-[var(--primary)]" />
-            </div>
-            <p className="text-xs text-[var(--muted-foreground)] mb-4 leading-relaxed">
-              {locale === 'es'
-                ? 'Gestiona tus clases universitarias, materias recurrentes y cuadrantes de la semana.'
-                : 'Manage your weekly university courses, recurring subjects, and timetable.'}
-            </p>
-            <Link href="/schedule">
-              <Button variant="outline" size="sm" className="w-full">
-                {t('schedule.title')}
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Global Quick Add Dialogs */}
       <QuickAddTaskDialog
         isOpen={isTaskModalOpen}
         onClose={() => setIsTaskModalOpen(false)}
         onTaskCreated={loadDashboardData}
       />
+
       <QuickAddEventDialog
         isOpen={isEventModalOpen}
         onClose={() => setIsEventModalOpen(false)}
@@ -656,7 +815,11 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[var(--background)]" />}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[var(--background)]" />
+      }
+    >
       <DashboardContent />
     </Suspense>
   );

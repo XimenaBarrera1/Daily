@@ -18,6 +18,28 @@ export interface ThemeInfo {
 
 const THEMES: ThemeInfo[] = [
   {
+    id: 'dawn',
+    nameEs: 'Amanecer Rosa',
+    nameEn: 'Pink Dawn',
+    descEs: 'Degradado vibrante de rosas y magentas con toques de cristal',
+    descEn: 'Vibrant gradient of pinks and magentas with glass touches',
+    primaryColor: '#D946EF',
+    accentColor: '#F472B6',
+    bgPreview: '#FDF2F8',
+    badgePreview: 'bg-[#FCE7F3] text-[#D946EF]',
+  },
+  {
+    id: 'dusk',
+    nameEs: 'Atardecer Oscuro',
+    nameEn: 'Dark Dusk',
+    descEs: 'Azul marino profundo con acentos de magenta y atardecer',
+    descEn: 'Deep navy blue with magenta and sunset accents',
+    primaryColor: '#F472B6',
+    accentColor: '#818CF8',
+    bgPreview: '#0F111A',
+    badgePreview: 'bg-[#312E81] text-[#F472B6]',
+  },
+  {
     id: 'sage',
     nameEs: 'Matcha & Salvia',
     nameEn: 'Matcha & Sage',
@@ -81,23 +103,26 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'sage',
+  theme: 'dawn',
   setTheme: async () => {},
   availableThemes: THEMES,
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeStyle>('sage');
+  const [theme, setThemeState] = useState<ThemeStyle>('dawn');
 
   useEffect(() => {
-    // 1. Read from localStorage
     const saved = localStorage.getItem('daily_theme') as ThemeStyle;
+    
     if (saved && THEMES.some((t) => t.id === saved)) {
       setThemeState(saved);
       document.documentElement.setAttribute('data-theme', saved);
+    } else {
+      setThemeState('dawn');
+      document.documentElement.setAttribute('data-theme', 'dawn');
+      localStorage.setItem('daily_theme', 'dawn');
     }
 
-    // 2. Read from profile in Supabase if logged in
     const fetchProfileTheme = async () => {
       try {
         const supabase = createClient();

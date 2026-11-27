@@ -1,23 +1,24 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme';
 import {
-  Compass,
-  CheckCircle2,
-  BookOpen,
-  Calendar,
-  Clock,
-  Sparkles,
-  Timer,
-  Bell,
-  BarChart3,
-  Settings,
+  Home,
+  ListChecks,
+  NotebookPen,
+  CalendarDays,
+  CalendarClock,
+  WandSparkles,
+  TimerReset,
+  BellRing,
+  ChartNoAxesColumnIncreasing,
+  SlidersHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
-  Palette,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -25,152 +26,293 @@ interface SidebarProps {
   unreadCount?: number;
 }
 
-export function Sidebar({ onQuickAdd, unreadCount = 0 }: SidebarProps) {
+interface NavigationItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  badge?: number;
+}
+
+export function Sidebar({
+  onQuickAdd,
+  unreadCount = 0,
+}: SidebarProps) {
   const pathname = usePathname();
   const { t, locale } = useI18n();
   const { theme } = useTheme();
 
-  const academicItems = [
-    { href: '/dashboard', label: t('nav.overview'), icon: Compass },
-    { href: '/tasks', label: t('nav.tasks'), icon: CheckCircle2 },
-    { href: '/notes', label: t('nav.notes'), icon: BookOpen },
-    { href: '/calendar', label: t('nav.calendar'), icon: Calendar },
-    { href: '/schedule', label: t('nav.schedule'), icon: Clock },
-  ];
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const focusItems = [
-    { href: '/planner', label: t('nav.planner'), icon: Sparkles },
-    { href: '/focus', label: t('nav.focus'), icon: Timer },
-    { href: '/notifications', label: t('nav.notifications'), icon: Bell, badge: unreadCount },
-    { href: '/progress', label: t('nav.progress'), icon: BarChart3 },
-    { href: '/settings', label: t('nav.settings'), icon: Settings },
+  useEffect(() => {
+    const savedState = window.localStorage.getItem(
+      'daily_sidebar_collapsed'
+    );
+
+    if (savedState === 'true') {
+      setIsCollapsed(true);
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    const nextState = !isCollapsed;
+
+    setIsCollapsed(nextState);
+
+    window.localStorage.setItem(
+      'daily_sidebar_collapsed',
+      String(nextState)
+    );
+  };
+
+  const navigationItems: NavigationItem[] = [
+    {
+      href: '/dashboard',
+      label: t('nav.overview'),
+      icon: Home,
+    },
+    {
+      href: '/tasks',
+      label: t('nav.tasks'),
+      icon: ListChecks,
+    },
+    {
+      href: '/notes',
+      label: t('nav.notes'),
+      icon: NotebookPen,
+    },
+    {
+      href: '/calendar',
+      label: t('nav.calendar'),
+      icon: CalendarDays,
+    },
+    {
+      href: '/schedule',
+      label: t('nav.schedule'),
+      icon: CalendarClock,
+    },
+    {
+      href: '/planner',
+      label: t('nav.planner'),
+      icon: WandSparkles,
+    },
+    {
+      href: '/focus',
+      label: t('nav.focus'),
+      icon: TimerReset,
+    },
+    {
+      href: '/notifications',
+      label: t('nav.notifications'),
+      icon: BellRing,
+      badge: unreadCount,
+    },
+    {
+      href: '/progress',
+      label: t('nav.progress'),
+      icon: ChartNoAxesColumnIncreasing,
+    },
+    {
+      href: '/settings',
+      label: t('nav.settings'),
+      icon: SlidersHorizontal,
+    },
   ];
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-[var(--surface)] border-r border-[var(--border)] h-screen sticky top-0 p-5 select-none z-20 transition-colors duration-200">
-      {/* Brand Header */}
-      <div className="flex items-center gap-3 px-2 mb-6">
-        <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] flex items-center justify-center text-white font-extrabold text-lg shadow-[0_2px_8px_rgba(0,0,0,0.12)]">
-          D
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-lg text-[var(--foreground)] tracking-tight leading-none">
-              DAILY
-            </span>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--primary)] bg-[var(--primary-light)] px-1.5 py-0.5 rounded-md">
-              v2.0
-            </span>
-          </div>
-          <span className="text-[10px] text-[var(--muted-foreground)] font-medium leading-none block mt-1">
-            {locale === 'es' ? 'Espacio Universitario' : 'Student Workspace'}
-          </span>
-        </div>
-      </div>
-
-      {/* Quick Add Action Button */}
-      {onQuickAdd && (
-        <div className="mb-6">
-          <button
-            onClick={onQuickAdd}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-2xl text-xs font-semibold transition-all shadow-[var(--card-shadow)] active:scale-[0.98]"
+    <aside
+      className={[
+        'sticky top-0 z-30 hidden h-screen shrink-0 flex-col',
+        'bg-[var(--surface)]',
+        'transition-[width] duration-300 ease-in-out',
+        'md:flex',
+        isCollapsed ? 'w-[76px]' : 'w-64',
+      ].join(' ')}
+    >
+      <div className="flex h-full flex-col px-3 py-5">
+        <div
+          className={[
+            'mb-8 flex items-center',
+            isCollapsed
+              ? 'justify-center'
+              : 'justify-between px-1',
+          ].join(' ')}
+        >
+          <Link
+            href="/dashboard"
+            className="flex min-w-0 items-center gap-3"
+            title="DAILY"
           >
-            <Plus className="w-4 h-4" />
-            <span>{t('tasks.newTask')}</span>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--foreground)] text-lg font-bold text-[var(--background)]">
+              D
+            </div>
+
+            {!isCollapsed && (
+              <div className="min-w-0">
+                <p className="text-base font-semibold tracking-[-0.03em] text-[var(--foreground)]">
+                  DAILY
+                </p>
+
+                <p className="truncate text-[10px] text-[var(--muted-foreground)]">
+                  {locale === 'es'
+                    ? 'Agenda universitaria'
+                    : 'University planner'}
+                </p>
+              </div>
+            )}
+          </Link>
+
+          {!isCollapsed && (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              title={
+                locale === 'es'
+                  ? 'Ocultar menú lateral'
+                  : 'Collapse sidebar'
+              }
+              aria-label={
+                locale === 'es'
+                  ? 'Ocultar menú lateral'
+                  : 'Collapse sidebar'
+              }
+              className="rounded-lg p-2 text-[var(--muted-foreground)] transition hover:bg-[var(--surface-secondary)] hover:text-[var(--foreground)]"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {isCollapsed && (
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title={
+              locale === 'es'
+                ? 'Mostrar menú lateral'
+                : 'Expand sidebar'
+            }
+            aria-label={
+              locale === 'es'
+                ? 'Mostrar menú lateral'
+                : 'Expand sidebar'
+            }
+            className="mb-7 self-center rounded-lg p-2 text-[var(--muted-foreground)] transition hover:bg-[var(--surface-secondary)] hover:text-[var(--foreground)]"
+          >
+            <PanelLeftOpen className="h-4 w-4" />
           </button>
-        </div>
-      )}
+        )}
 
-      {/* Navigation Sections */}
-      <nav className="flex-1 space-y-6 overflow-y-auto pr-1">
-        {/* Academic Group */}
-        <div>
-          <span className="block px-2 text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-2">
-            {locale === 'es' ? 'Espacio Académico' : 'Academic Space'}
-          </span>
-          <div className="space-y-1">
-            {academicItems.map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
+        {onQuickAdd && (
+          <button
+            type="button"
+            onClick={onQuickAdd}
+            title={
+              isCollapsed
+                ? t('tasks.newTask')
+                : undefined
+            }
+            className={[
+              'mb-8 flex items-center justify-center gap-2',
+              'rounded-xl bg-[var(--foreground)]',
+              'text-xs font-semibold text-[var(--background)]',
+              'transition hover:opacity-80',
+              isCollapsed
+                ? 'mx-auto h-10 w-10'
+                : 'w-full px-4 py-3',
+            ].join(' ')}
+          >
+            <Plus className="h-4 w-4 shrink-0" />
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+            {!isCollapsed && (
+              <span>{t('tasks.newTask')}</span>
+            )}
+          </button>
+        )}
+
+        <nav className="flex-1 space-y-1 overflow-y-auto">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={isCollapsed ? item.label : undefined}
+                className={[
+                  'relative flex items-center rounded-xl',
+                  'transition-all duration-200',
+                  isCollapsed
+                    ? 'justify-center px-3 py-3'
+                    : 'gap-3 px-3 py-2.5',
+                  isActive
+                    ? 'bg-[var(--primary-light)] font-semibold text-[var(--primary)]'
+                    : 'text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]',
+                ].join(' ')}
+              >
+                <Icon
+                  className={[
+                    'h-[18px] w-[18px] shrink-0',
                     isActive
-                      ? 'bg-[var(--primary-light)] text-[var(--primary)] font-bold shadow-xs'
-                      : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)]'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon
-                      className={`w-4 h-4 ${
-                        isActive ? 'text-[var(--primary)] stroke-[2.2px]' : 'text-[var(--muted-foreground)]'
-                      }`}
-                    />
-                    <span>{item.label}</span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+                      ? 'stroke-[2.2px]'
+                      : 'stroke-[1.8px]',
+                  ].join(' ')}
+                />
 
-        {/* Productivity & Focus Group */}
-        <div>
-          <span className="block px-2 text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-2">
-            {locale === 'es' ? 'Enfoque & Hábitos' : 'Focus & Planning'}
-          </span>
-          <div className="space-y-1">
-            {focusItems.map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
+                {!isCollapsed && (
+                  <span className="truncate text-sm">
+                    {item.label}
+                  </span>
+                )}
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-                    isActive
-                      ? 'bg-[var(--primary-light)] text-[var(--primary)] font-bold shadow-xs'
-                      : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)]'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon
-                      className={`w-4 h-4 ${
-                        isActive ? 'text-[var(--primary)] stroke-[2.2px]' : 'text-[var(--muted-foreground)]'
-                      }`}
-                    />
-                    <span>{item.label}</span>
-                  </div>
-
-                  {item.badge && item.badge > 0 ? (
-                    <span className="bg-[var(--danger)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">
+                {!isCollapsed &&
+                  item.badge !== undefined &&
+                  item.badge > 0 && (
+                    <span className="ml-auto rounded-full bg-[var(--danger)] px-1.5 py-0.5 text-[10px] font-bold text-white">
                       {item.badge}
                     </span>
-                  ) : null}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
+                  )}
 
-      {/* Bottom Footer: Active Theme Pill */}
-      <div className="pt-4 border-t border-[var(--border)] text-xs text-[var(--muted-foreground)] px-2">
+                {isCollapsed &&
+                  item.badge !== undefined &&
+                  item.badge > 0 && (
+                    <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[var(--danger)] ring-2 ring-[var(--surface)]" />
+                  )}
+              </Link>
+            );
+          })}
+        </nav>
+
         <Link
           href="/settings"
-          className="flex items-center justify-between p-2 rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
+          title={
+            isCollapsed
+              ? locale === 'es'
+                ? 'Tema actual'
+                : 'Current theme'
+              : undefined
+          }
+          className={[
+            'mt-5 flex items-center rounded-xl',
+            'pt-4 text-[var(--muted-foreground)]',
+            isCollapsed
+              ? 'justify-center'
+              : 'justify-between px-2',
+          ].join(' ')}
         >
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[var(--primary)] shadow-xs" />
-            <span className="text-[11px] font-medium text-[var(--foreground)] capitalize">
-              {theme}
-            </span>
-          </div>
-          <Palette className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-[var(--primary)]" />
+
+            {!isCollapsed && (
+              <span className="text-xs font-medium capitalize text-[var(--foreground)]">
+                {theme}
+              </span>
+            )}
+          </span>
+
+          {!isCollapsed && (
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+          )}
         </Link>
       </div>
     </aside>

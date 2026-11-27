@@ -52,14 +52,34 @@ export function MiniWeekCalendar({ events, tasks, onDayClick }: MiniWeekCalendar
           const { dayEvents, dayTasks } = getItemsForDay(date);
           const hasItems = dayEvents.length > 0 || dayTasks.length > 0;
           const activeToday = isToday(date);
+          const canSelectDay = Boolean(onDayClick);
+          const handleDayClick = onDayClick ? () => onDayClick(date) : undefined;
+          const handleDayKeyDown = onDayClick
+            ? (event: React.KeyboardEvent<HTMLDivElement>) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onDayClick(date);
+                }
+              }
+            : undefined;
 
           return (
             <div 
               key={index} 
-              className={`flex flex-col items-center p-2 rounded-xl transition ${
+              role={canSelectDay ? 'button' : undefined}
+              tabIndex={canSelectDay ? 0 : undefined}
+              aria-label={canSelectDay
+                ? date.toLocaleDateString(locale === 'es' ? 'es' : 'en', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                  })
+                : undefined}
+              className={`flex flex-col items-center p-2 rounded-xl transition ${canSelectDay ? 'cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]' : ''} ${
                 activeToday ? 'bg-[var(--primary-light)]/40' : 'hover:bg-[var(--surface-hover)]'
               }`}
-              onClick={() => onDayClick?.(date)}
+              onClick={handleDayClick}
+              onKeyDown={handleDayKeyDown}
             >
               {/* Nombre del día */}
               <span className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${

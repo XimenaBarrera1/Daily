@@ -19,6 +19,7 @@ import {
 import {
   isPushNotificationSupported,
   getNotificationPermissionState,
+  isPushSubscriptionSynced,
   subscribeToPushNotifications,
 } from '@/lib/push/client';
 
@@ -31,6 +32,7 @@ export default function NotificationsPage() {
 
   // Push notification states
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [pushMessage, setPushMessage] = useState<{ text: string; type: 'success' | 'warning' | 'error' | 'info' } | null>(null);
 
@@ -71,8 +73,10 @@ export default function NotificationsPage() {
       if (supported) {
         const state = await getNotificationPermissionState();
         setPushPermission(state);
+        setIsPushSubscribed(state === 'granted' && await isPushSubscriptionSynced());
       } else {
         setPushPermission('denied');
+        setIsPushSubscribed(false);
       }
     };
     checkPush();
@@ -128,6 +132,7 @@ export default function NotificationsPage() {
 
     const updatedState = await getNotificationPermissionState();
     setPushPermission(updatedState);
+    setIsPushSubscribed(result.success);
 
     if (result.success) {
       setPushMessage({
@@ -192,7 +197,7 @@ export default function NotificationsPage() {
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-center shrink-0">
-            {pushPermission === 'granted' ? (
+            {pushPermission === 'granted' && isPushSubscribed ? (
               <Badge variant="success" className="py-1 px-3">
                 <ShieldCheck className="w-3.5 h-3.5 mr-1" />
                 {t('notifications.pushEnabled')}

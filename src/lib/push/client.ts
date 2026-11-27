@@ -13,7 +13,30 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export async function isPushNotificationSupported(): Promise<boolean> {
-  return typeof window !== 'undefined' && 'Notification' in window;
+  return typeof window !== 'undefined'
+    && 'Notification' in window
+    && 'serviceWorker' in navigator
+    && 'PushManager' in window;
+}
+
+export async function isPushSubscriptionSynced(): Promise<boolean> {
+  if (!(await isPushNotificationSupported()) || Notification.permission !== 'granted') return false;
+
+  try {
+    const registration = await navigator.serviceWorker.getRegistration('/');
+    const subscription = await registration?.pushManager.getSubscription();
+    if (!subscription) return false;
+
+    const response = await fetch(`/api/push/subscribe?endpoint=${encodeURIComponent(subscription.endpoint)}`, {
+      cache: 'no-store',
+    });
+    if (!response.ok) return false;
+    const result = await response.json();
+    return result.subscribed === true;
+  } catch (error) {
+    console.warn('Could not verify push subscription:', error);
+    return false;
+  }
 }
 
 export async function getNotificationPermissionState(): Promise<NotificationPermission> {
@@ -31,7 +54,8 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/',
     });
-    return registration;
+    await navigator.serviceWorker.ready;
+    return await navigator.serviceWorker.getRegistration('/') || registration;
   } catch (error) {
     console.warn('Service worker registration note:', error);
     return null;
@@ -47,7 +71,7 @@ export async function showLocalNotification(
 
   try {
     if ('serviceWorker' in navigator) {
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await navigator.serviceWorker.getRegistration('/');
       if (reg && reg.showNotification) {
         await reg.showNotification(title, {
           icon: '/icons/icon-192.png',
@@ -79,7 +103,7 @@ export async function subscribeToPushNotifications(locale: 'es' | 'en' = 'es'): 
   isPushServiceBlocked?: boolean;
 }> {
   try {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
+    if (!(await isPushNotificationSupported())) {
       return {
         success: false,
         error: locale === 'es'
@@ -109,13 +133,22 @@ export async function subscribeToPushNotifications(locale: 'es' | 'en' = 'es'): 
 
     const registration = await registerServiceWorker();
     if (!registration) {
-      // In browsers without service worker active, local notifications still work
-      return { success: true };
+      return {
+        success: false,
+        error: locale === 'es'
+          ? 'No se pudo registrar el Service Worker del sitio.'
+          : 'The site Service Worker could not be registered.',
+      };
     }
 
     const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (!vapidPublicKey || vapidPublicKey.length < 10) {
-      return { success: true };
+      return {
+        success: false,
+        error: locale === 'es'
+          ? 'Falta configurar NEXT_PUBLIC_VAPID_PUBLIC_KEY para activar avisos push.'
+          : 'NEXT_PUBLIC_VAPID_PUBLIC_KEY must be configured to enable push alerts.',
+      };
     }
 
     const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
@@ -155,24 +188,30 @@ export async function subscribeToPushNotifications(locale: 'es' | 'en' = 'es'): 
       }
     }
 
-    if (subscription) {
-      try {
-        const response = await fetch('/api/push/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            subscription: subscription.toJSON(),
-            deviceLabel: navigator.userAgent.slice(0, 50),
-          }),
-        });
+    if (!subscription) {
+      return {
+        success: false,
+        error: locale === 'es' ? 'El navegador no generó una suscripción push.' : 'The browser did not create a push subscription.',
+      };
+    }
 
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          console.warn('Server subscribe response:', data);
-        }
-      } catch (netErr) {
-        console.warn('Push subscription sync to server note:', netErr);
-      }
+    const response = await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscription: subscription.toJSON(),
+        deviceLabel: navigator.userAgent.slice(0, 50),
+      }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        error: data.error || (locale === 'es'
+          ? 'El servidor no pudo guardar la suscripción de este dispositivo.'
+          : 'The server could not save this device subscription.'),
+      };
     }
 
     return { success: true };

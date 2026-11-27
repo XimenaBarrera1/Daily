@@ -271,7 +271,7 @@
     "markAllRead": "Mark all as read",
     "empty": "You have no pending notifications.",
     "pushBannerTitle": "Enable browser push notifications",
-    "pushBannerDesc": "Enable browser alerts to receive notifications when your reminders are due.",
+    "pushBannerDesc": "Enable alerts on each device. On iPhone or iPad, add DAILY to the Home Screen before enabling them.",
     "enablePush": "Enable alerts",
     "pushEnabled": "Browser notifications active",
     "pushDenied": "Browser notifications blocked. Please enable them in your browser site settings.",

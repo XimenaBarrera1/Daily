@@ -25,6 +25,15 @@ import {
 import Link from 'next/link';
 import { QuickAddTaskDialog } from '@/components/modals/quick-add-task-dialog';
 
+function toDateTimeLocalValue(value: string | null): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
 function TasksContent() {
   const { locale, t, formatDate, formatTime } = useI18n();
 
@@ -43,6 +52,8 @@ function TasksContent() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const loadTasks = useCallback(async () => {
     try {
@@ -121,9 +132,14 @@ function TasksContent() {
     e.preventDefault();
     if (!editingTask) return;
 
+    setEditError(null);
+    setIsSavingEdit(true);
     try {
       const supabase = createClient();
-      await supabase
+      const previousDueAt = tasks.find((task) => task.id === editingTask.id)?.due_at ?? null;
+      const dueAtChanged = previousDueAt !== editingTask.due_at;
+
+      const { error: taskError } = await supabase
         .from('tasks')
         .update({
           title: editingTask.title,
@@ -134,11 +150,79 @@ function TasksContent() {
           estimated_minutes: editingTask.estimated_minutes,
         })
         .eq('id', editingTask.id);
+      if (taskError) throw taskError;
+
+      if (dueAtChanged) {
+        const { data: reminders, error: remindersError } = await supabase
+          .from('reminders')
+          .select('id, scheduled_at, status')
+          .eq('task_id', editingTask.id)
+          .in('status', ['pending', 'failed'])
+          .order('created_at', { ascending: false });
+        if (remindersError) throw remindersError;
+
+        if (!editingTask.due_at) {
+          const { error } = await supabase
+            .from('reminders')
+            .update({ status: 'cancelled' })
+            .eq('task_id', editingTask.id)
+            .eq('status', 'pending');
+          if (error) throw error;
+        } else {
+          const reusableReminder = reminders?.find((reminder) => reminder.status === 'pending')
+            ?? reminders?.[0];
+          const previousReminderOffset = reusableReminder && previousDueAt
+            ? Math.max(0, new Date(previousDueAt).getTime() - new Date(reusableReminder.scheduled_at).getTime())
+            : 15 * 60 * 1000;
+          const scheduledAt = new Date(new Date(editingTask.due_at).getTime() - previousReminderOffset).toISOString();
+
+          if (reusableReminder) {
+            const { error } = await supabase
+              .from('reminders')
+              .update({
+                scheduled_at: scheduledAt,
+                status: 'pending',
+                sent_at: null,
+                error_message: null,
+                idempotency_key: `task-${editingTask.id}-${scheduledAt}-${reusableReminder.id}`,
+              })
+              .eq('id', reusableReminder.id);
+            if (error) throw error;
+
+            const duplicateIds = reminders
+              ?.filter((reminder) => reminder.id !== reusableReminder.id && reminder.status === 'pending')
+              .map((reminder) => reminder.id) ?? [];
+            if (duplicateIds.length > 0) {
+              const { error: duplicateError } = await supabase
+                .from('reminders')
+                .update({ status: 'cancelled' })
+                .in('id', duplicateIds);
+              if (duplicateError) throw duplicateError;
+            }
+          } else {
+            const { error } = await supabase.from('reminders').insert({
+              user_id: editingTask.user_id,
+              task_id: editingTask.id,
+              scheduled_at: scheduledAt,
+              channel: 'all',
+              status: 'pending',
+              idempotency_key: `task-${editingTask.id}-${scheduledAt}-${crypto.randomUUID()}`,
+            });
+            if (error) throw error;
+          }
+        }
+      }
 
       setEditingTask(null);
+      window.dispatchEvent(new CustomEvent('tempo:data-updated'));
       loadTasks();
     } catch (err) {
       console.error('Error editing task:', err);
+      setEditError(locale === 'es'
+        ? 'No se pudo guardar el cambio o reprogramar el recordatorio. Revisa la conexión e inténtalo de nuevo.'
+        : 'The change or reminder could not be saved. Check your connection and try again.');
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -444,6 +528,11 @@ function TasksContent() {
           title={t('tasks.editTask')}
         >
           <form onSubmit={handleSaveEdit} className="space-y-4 mt-2">
+            {editError && (
+              <div role="alert" className="rounded-xl border border-[var(--danger-border)] bg-[var(--danger-light)] p-3 text-xs text-[var(--danger)]">
+                {editError}
+              </div>
+            )}
             <Input
               label={t('tasks.taskTitle')}
               value={editingTask.title}
@@ -495,7 +584,7 @@ function TasksContent() {
               <Input
                 type="datetime-local"
                 label={t('tasks.dueDate')}
-                value={editingTask.due_at ? editingTask.due_at.slice(0, 16) : ''}
+                value={toDateTimeLocalValue(editingTask.due_at)}
                 onChange={(e) =>
                   setEditingTask({
                     ...editingTask,
@@ -517,7 +606,7 @@ function TasksContent() {
               <Button type="button" variant="outline" onClick={() => setEditingTask(null)}>
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" variant="primary">
+              <Button type="submit" variant="primary" isLoading={isSavingEdit}>
                 {t('common.save')}
               </Button>
             </div>

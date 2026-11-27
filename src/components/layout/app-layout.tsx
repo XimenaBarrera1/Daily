@@ -8,6 +8,7 @@ import { QuickAddTaskDialog } from '../modals/quick-add-task-dialog';
 import { QuickAddEventDialog } from '../modals/quick-add-event-dialog';
 import { createClient } from '@/lib/supabase/client';
 import { AlertCircle } from 'lucide-react';
+import { showLocalNotification } from '@/lib/push/client';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -64,9 +65,12 @@ export function AppLayout({ children, title }: AppLayoutProps) {
   }, []);
 
   useEffect(() => {
+    const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    if (process.env.NODE_ENV !== 'development' && !isLocalHost) return;
+
     let isProcessing = false;
     const processDueReminders = async () => {
-      if (isProcessing || document.visibilityState === 'hidden') return;
+      if (isProcessing) return;
 
       const lockKey = 'tempo:local-reminder-check';
       const now = Date.now();
@@ -83,6 +87,15 @@ export function AppLayout({ children, title }: AppLayoutProps) {
         const result = await response.json();
         if (result.sent > 0) {
           window.dispatchEvent(new CustomEvent('tempo:data-updated'));
+        }
+        for (const alert of result.alerts || []) {
+          if (alert.allowed && !alert.deliveredByPush) {
+            await showLocalNotification(alert.title, {
+              body: alert.body,
+              tag: alert.tag,
+              data: { url: alert.url },
+            });
+          }
         }
         if (result.failed > 0) {
           window.dispatchEvent(new CustomEvent('tempo:reminder-failed'));

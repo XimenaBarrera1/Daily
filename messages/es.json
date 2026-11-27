@@ -271,7 +271,7 @@
     "markAllRead": "Marcar todo como leído",
     "empty": "No tienes notificaciones pendientes.",
     "pushBannerTitle": "Activar notificaciones en el navegador",
-    "pushBannerDesc": "Activa los avisos del navegador para recibir notificaciones cuando llegue la hora de tus recordatorios.",
+    "pushBannerDesc": "Activa los avisos en cada dispositivo. En iPhone o iPad, agrega DAILY a la pantalla de inicio antes de activarlos.",
     "enablePush": "Activar avisos",
     "pushEnabled": "Notificaciones del navegador activas",
     "pushDenied": "Notificaciones bloqueadas en el navegador. Por favor actívalas en la configuración de tu sitio.",

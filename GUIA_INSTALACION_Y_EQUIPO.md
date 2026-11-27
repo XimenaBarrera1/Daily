@@ -110,11 +110,20 @@ VAPID_PRIVATE_KEY=...
 VAPID_SUBJECT=mailto:equipo@daily-app.com
 
 # 4. Token secreto para tareas programadas
+# Usa un valor aleatorio único en producción. El mismo token se guarda en Supabase Vault.
 CRON_SECRET=daily_cron_secret_token_change_in_production
 
 # 5. URL Local
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
+
+### Recordatorios automáticos en producción
+
+- Configura `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y un `CRON_SECRET` aleatorio en las variables de entorno del hosting.
+- En el SQL Editor de Supabase, abre [`supabase/schedule_reminders.sql`](supabase/schedule_reminders.sql), reemplaza el dominio público de la app y el mismo `CRON_SECRET`, y ejecútalo una sola vez. Supabase Cron llamará al endpoint cada minuto, así las alertas con la app cerrada no dependen del plan de Vercel.
+- En local, abre DAILY e inicia sesión; mientras esté abierta, la app procesa recordatorios vencidos y puede mostrar el aviso del sistema.
+- Cada computador y celular debe activar avisos desde su propio navegador. En iPhone/iPad con iOS 16.4 o posterior, primero agrega DAILY a la pantalla de inicio; iOS solo permite Web Push en esa app instalada.
+- Push requiere una dirección segura HTTPS; `http://localhost` funciona en el computador de desarrollo, pero una IP local HTTP no habilita Push en el celular.
 
 ---
 

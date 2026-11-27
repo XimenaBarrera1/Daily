@@ -96,15 +96,28 @@ export async function POST(request: NextRequest) {
     const userLang: Language = (profile?.preferred_language as Language) || 'es';
     const isEs = userLang === 'es';
 
-    const userDate = new Date();
-    const currentTimeStr = `${String(userDate.getHours()).padStart(2, '0')}:${String(userDate.getMinutes()).padStart(2, '0')}`;
+    const currentTimeStr = new Intl.DateTimeFormat('en-GB', {
+      timeZone: profile?.timezone || 'America/Bogota',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(new Date());
     const quiet = isInQuietHours(currentTimeStr, profile?.quiet_hours_start, profile?.quiet_hours_end);
 
     const results = {
       processed: reminders.length,
       sent: 0,
       failed: 0,
+      pushSent: 0,
     };
+    const alerts: Array<{
+      title: string;
+      body: string;
+      url: string;
+      tag: string;
+      deliveredByPush: boolean;
+      allowed: boolean;
+    }> = [];
 
     for (const reminder of reminders) {
       try {
@@ -126,6 +139,16 @@ export async function POST(request: NextRequest) {
           body = isEs ? 'Tu compromiso comenzará en breve.' : 'Your event is starting soon.';
           targetUrl = '/calendar';
         }
+
+        const localAlert = {
+          title,
+          body,
+          url: targetUrl,
+          tag: `reminder-${reminder.id}`,
+          deliveredByPush: false,
+          allowed: profile?.push_reminders_enabled !== false && !quiet,
+        };
+        alerts.push(localAlert);
 
         // A. Insert in-app notification
         const { error: notificationError } = await admin.from('notifications').insert({
@@ -163,6 +186,8 @@ export async function POST(request: NextRequest) {
                     tag: `reminder-${reminder.id}`,
                   })
                 );
+                localAlert.deliveredByPush = true;
+                results.pushSent++;
               } catch (pushErr: any) {
                 if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
                   const { error: deleteError } = await admin.from('push_subscriptions').delete().eq('id', sub.id);
@@ -231,6 +256,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       ...results,
+      alerts,
     });
   } catch (err: any) {
     console.error('API /reminders/process fatal error:', err);

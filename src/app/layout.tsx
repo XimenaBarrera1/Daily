@@ -9,6 +9,12 @@ export const metadata: Metadata = {
   description: 'Plan with intention, focus on what matters, and make every day count. Assignments, notes, calendars and personal goals in one place.',
   icons: {
     icon: '/icons/icon.svg',
+    apple: '/icons/icon-192.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'DAILY',
   },
 };
 

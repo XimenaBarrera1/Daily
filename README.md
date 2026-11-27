@@ -59,6 +59,12 @@ DAILY ofrece tres estilos de personalización, diseñados para distintas formas 
 
 ---
 
+## Recordatorios automáticos
+
+En desarrollo, DAILY revisa los recordatorios cada 15 segundos mientras la sesión está abierta. En producción, el backend necesita un programador que llame `/api/cron/process-reminders` cada minuto; el proyecto incluye [`supabase/schedule_reminders.sql`](supabase/schedule_reminders.sql) para configurar Supabase Cron y no depender del plan de Vercel. Configura VAPID y `CRON_SECRET` en el hosting, guarda el mismo secreto en Supabase Vault y activa Web Push desde cada dispositivo. Push requiere HTTPS; en iPhone/iPad con iOS 16.4 o posterior, agrega DAILY a la pantalla de inicio antes de activar los avisos.
+
+---
+
 ## 🏗️ Stack Tecnológico
 
 | Capa | Tecnología |

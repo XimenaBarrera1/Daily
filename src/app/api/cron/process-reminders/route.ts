@@ -4,6 +4,8 @@ import { setVapidDetails, sendNotification } from 'web-push';
 import { sendEmail, getTaskReminderTemplate, getEventReminderTemplate } from '@/lib/email/resend';
 import { Language } from '@/types';
 
+export const maxDuration = 60;
+
 // Helper to check if current time is within user's quiet hours
 function isInQuietHours(currentTimeStr: string, quietStart?: string | null, quietEnd?: string | null): boolean {
   if (!quietStart || !quietEnd) return false;
@@ -26,11 +28,13 @@ async function handleReminderProcessing(request: NextRequest) {
   // 1. Authorization check
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
+  const isPlaceholderSecret = !cronSecret || /placeholder|change_in_production/i.test(cronSecret);
 
-  if (cronSecret && cronSecret !== 'tempo_super_secret_cron_token_change_in_production') {
-    if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized: Invalid CRON_SECRET' }, { status: 401 });
-    }
+  if (process.env.NODE_ENV === 'production' && isPlaceholderSecret) {
+    return NextResponse.json({ error: 'CRON_SECRET must be configured with a unique production value.' }, { status: 503 });
+  }
+  if (!isPlaceholderSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized: Invalid CRON_SECRET' }, { status: 401 });
   }
 
   const supabase = createAdminClient();
@@ -109,8 +113,12 @@ async function handleReminderProcessing(request: NextRequest) {
         const isEs = userLang === 'es';
 
         // Check quiet hours
-        const userDate = new Date();
-        const currentTimeStr = `${String(userDate.getHours()).padStart(2, '0')}:${String(userDate.getMinutes()).padStart(2, '0')}`;
+        const currentTimeStr = new Intl.DateTimeFormat('en-GB', {
+          timeZone: profile?.timezone || 'America/Bogota',
+          hour: '2-digit',
+          minute: '2-digit',
+          hourCycle: 'h23',
+        }).format(new Date());
         const quiet = isInQuietHours(currentTimeStr, profile?.quiet_hours_start, profile?.quiet_hours_end);
 
         // Derive content from linked task or event
@@ -133,6 +141,25 @@ async function handleReminderProcessing(request: NextRequest) {
           targetUrl = '/calendar';
         }
 
+        const shouldSendPush = (reminder.channel === 'all' || reminder.channel === 'push')
+          && profile?.push_reminders_enabled !== false
+          && !quiet;
+        if (shouldSendPush && (!vapidPublic || !vapidPrivate)) {
+          throw new Error('Web Push is enabled for this reminder, but the VAPID keys are not configured.');
+        }
+        let pushSubscriptions = null;
+        if (shouldSendPush) {
+          const { data: subscriptions, error: subscriptionsError } = await supabase
+            .from('push_subscriptions')
+            .select('*')
+            .eq('user_id', reminder.user_id);
+          if (subscriptionsError) throw subscriptionsError;
+          if (!subscriptions?.length) {
+            throw new Error('No push subscription is registered for this user. Enable notifications on each device.');
+          }
+          pushSubscriptions = subscriptions;
+        }
+
         // A. In-App Notification (Always record unless explicit failure)
         const { error: notificationError } = await supabase.from('notifications').insert({
           user_id: reminder.user_id,
@@ -146,16 +173,10 @@ async function handleReminderProcessing(request: NextRequest) {
         if (notificationError) throw notificationError;
 
         // B. Browser Push Notification
-        if (profile?.push_reminders_enabled !== false && !quiet && vapidPublic && vapidPrivate) {
-          const { data: subs, error: subscriptionsError } = await supabase
-            .from('push_subscriptions')
-            .select('*')
-            .eq('user_id', reminder.user_id);
-          if (subscriptionsError) throw subscriptionsError;
-
-          if (subs && subs.length > 0) {
+        if (shouldSendPush && vapidPublic && vapidPrivate) {
+          if (pushSubscriptions && pushSubscriptions.length > 0) {
             let pushFailure: Error | null = null;
-            for (const sub of subs) {
+            for (const sub of pushSubscriptions) {
               const pushSubscription = {
                 endpoint: sub.endpoint,
                 keys: {
